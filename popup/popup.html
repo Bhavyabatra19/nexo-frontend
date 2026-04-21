@@ -72,6 +72,32 @@
       <button id="sync-btn" class="btn btn-primary">Sync Now</button>
     </div>
 
+    <!-- Connections page scan progress (visible when user is on connections page) -->
+    <div id="scan-card" class="card hidden">
+      <p class="card-label">Connections Page Scan</p>
+      <div class="sync-row">
+        <div>
+          <p id="scan-status-text" class="sync-status syncing">Open your LinkedIn connections page and scroll to sync</p>
+        </div>
+        <div id="scan-icon" class="sync-icon">📋</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat">
+          <span id="scan-captured" class="stat-value">0</span>
+          <span class="stat-label">Captured</span>
+        </div>
+        <div class="stat">
+          <span id="scan-synced" class="stat-value">0</span>
+          <span class="stat-label">Synced</span>
+        </div>
+      </div>
+      <p class="hint" style="margin-top:6px">
+        Go to
+        <a href="https://www.linkedin.com/mynetwork/invite-connect/connections/" target="_blank">LinkedIn → My Network → Connections</a>
+        and scroll to the bottom
+      </p>
+    </div>
+
     <!-- LinkedIn session status -->
     <div id="linkedin-warning" class="warning hidden">
       ⚠️ Not signed in to LinkedIn — open LinkedIn in a tab to enable sync.

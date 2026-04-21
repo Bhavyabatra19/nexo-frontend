@@ -60,27 +60,53 @@ document.getElementById('token-input').addEventListener('keydown', (e) => {
 // ── Main view ─────────────────────────────────────────────────────────────────
 
 async function renderMainView(stats) {
-  // Populate stats from backend
-  document.getElementById('stat-contacts').textContent =
-    stats.extension_contacts ?? '—';
-  document.getElementById('stat-enriched').textContent =
-    stats.enriched ?? '—';
+  document.getElementById('stat-contacts').textContent = stats.extension_contacts ?? '—';
+  document.getElementById('stat-enriched').textContent = stats.enriched ?? '—';
 
-  // Last sync from local state
-  const syncState = await getSyncStateFromBackground();
+  const [syncState, scanState] = await Promise.all([
+    getSyncStateFromBackground(),
+    getScanStateFromBackground(),
+  ]);
+
   renderSyncState(syncState);
+  renderScanState(scanState);
 
-  // Check if LinkedIn is logged in
   const liCookie = await chrome.cookies.get({ url: 'https://www.linkedin.com', name: 'li_at' });
   document.getElementById('linkedin-warning').classList.toggle('hidden', !!liCookie?.value);
 
-  // Notifications toggle
   const { notificationsEnabled } = await chrome.storage.local.get('notificationsEnabled');
   document.getElementById('notif-toggle').checked = notificationsEnabled !== false;
 
-  // Last sync time
   if (syncState?.lastSync) {
     document.getElementById('stat-last-sync').textContent = formatRelativeTime(syncState.lastSync);
+  }
+}
+
+function renderScanState(state) {
+  const card       = document.getElementById('scan-card');
+  const statusEl   = document.getElementById('scan-status-text');
+  const iconEl     = document.getElementById('scan-icon');
+  const capturedEl = document.getElementById('scan-captured');
+  const syncedEl   = document.getElementById('scan-synced');
+
+  // Always show the scan card so users know the feature exists
+  card.classList.remove('hidden');
+
+  capturedEl.textContent = state?.captured ?? 0;
+  syncedEl.textContent   = state?.synced   ?? 0;
+
+  if (state?.status === 'scanning' && state.captured > 0) {
+    statusEl.textContent = `Scanning — scroll to capture more`;
+    statusEl.className   = 'sync-status syncing';
+    iconEl.textContent   = '🔄';
+  } else if (state?.captured > 0) {
+    statusEl.textContent = `Last scan: ${formatRelativeTime(state.lastBatch)}`;
+    statusEl.className   = 'sync-status done';
+    iconEl.textContent   = '✅';
+  } else {
+    statusEl.textContent = 'Go to Connections page and scroll';
+    statusEl.className   = 'sync-status';
+    iconEl.textContent   = '📋';
   }
 }
 
@@ -173,6 +199,10 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'SYNC_STATE_UPDATE') {
     renderSyncState(message.state);
   }
+
+  if (message.type === 'SCAN_STATE_UPDATE') {
+    renderScanState(message.state);
+  }
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -180,6 +210,12 @@ chrome.runtime.onMessage.addListener((message) => {
 async function getSyncStateFromBackground() {
   return new Promise(resolve => {
     chrome.runtime.sendMessage({ type: 'GET_SYNC_STATE' }, resolve);
+  });
+}
+
+async function getScanStateFromBackground() {
+  return new Promise(resolve => {
+    chrome.runtime.sendMessage({ type: 'GET_SCAN_STATE' }, resolve);
   });
 }
 
