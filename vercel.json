@@ -1,9 +1,6 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "public/index.html", "use": "@vercel/static" }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "/public/index.html" }
-  ]
+  "buildCommand": null,
+  "outputDirectory": "public",
+  "framework": null,
+  "cleanUrls": true
 }

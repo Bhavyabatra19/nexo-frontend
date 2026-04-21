@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Nexo — Your Network, Organized",
-  "version": "1.0.0",
-  "description": "Auto-syncs your LinkedIn network to Nexo every 3 days. Passive profile capture as you browse.",
+  "version": "1.1.0",
+  "description": "Captures your LinkedIn network as you browse. Passive, no cookie scraping.",
 
   "permissions": [
     "cookies",
@@ -13,7 +13,7 @@
   ],
   "host_permissions": [
     "*://*.linkedin.com/*",
-    "https://187.127.129.125.nip.io/*",
+    "https://web-production-c03054.up.railway.app/*",
     "http://localhost:3000/*"
   ],
 
@@ -26,7 +26,8 @@
     {
       "matches": ["*://*.linkedin.com/*"],
       "js": ["content_script.js"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ],
 

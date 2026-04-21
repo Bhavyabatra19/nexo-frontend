@@ -3,44 +3,70 @@
  *
  * Three modes:
  * 1. Profile page (linkedin.com/in/*): passive DOM capture + inject Nexo button
- * 2. Connections page (/mynetwork/.../connections): passive scroll capture → batch sync
+ * 2. Connections page (/mynetwork/.../connections): MutationObserver scroll capture → batch sync
  * 3. Any page: SPA navigation watcher
+ *
+ * Design: DOM-reading only (same approach as Dex, Clay, Folk).
+ * No cookie injection, no Voyager API calls.
  */
 
 (function () {
   if (window.__nexoInjected) return;
   window.__nexoInjected = true;
 
-  const isProfilePage     = window.location.pathname.startsWith('/in/');
-  const isConnectionsPage = window.location.pathname.includes('/mynetwork/invite-connect/connections');
+  const isProfilePage     = () => window.location.pathname.startsWith('/in/');
+  const isConnectionsPage = () => window.location.pathname.includes('/mynetwork/invite-connect/connections');
 
-  if (isProfilePage) {
+  if (isProfilePage()) {
     waitForElement('h1', () => {
       captureCurrentProfile();
       injectNexoButton();
     });
   }
 
-  if (isConnectionsPage) {
+  if (isConnectionsPage()) {
     waitForElement(
-      '.mn-connections__list, [class*="scaffold-finite-scroll__content"], li.mn-connection-card',
+      CONNECTION_CARD_SELECTORS.join(', '),
       startConnectionsCapture,
       15000
     );
   }
 
+  // ── Selectors ─────────────────────────────────────────────────────────────
+  // Multiple variants to survive LinkedIn's frequent CSS renames.
+
+  const CONNECTION_CARD_SELECTORS = [
+    'li.mn-connection-card',
+    'li[class*="mn-connection-card"]',
+    'li[class*="reusable-search__result-container"]',
+    'li[class*="entity-result"]',
+    'li[class*="scaffold-finite-scroll"]',
+  ];
+
+  const CONNECTION_LIST_SELECTORS = [
+    '.mn-connections__list',
+    '[class*="scaffold-finite-scroll__content"]',
+    '[class*="search-results-container"]',
+  ];
+
+  function isConnectionCard(el) {
+    return el.matches?.(CONNECTION_CARD_SELECTORS.join(', '));
+  }
+
+  function queryCards(root) {
+    return [...root.querySelectorAll(CONNECTION_CARD_SELECTORS.join(', '))];
+  }
+
   // ── Connections Page Capture ───────────────────────────────────────────────
-  // Passive: user scrolls their connections page, we capture cards as they render.
-  // Batches of 50 are POSTed to /api/extension/batch via background.
 
   function startConnectionsCapture() {
     if (window.__nexoScanActive) return;
     window.__nexoScanActive = true;
 
-    const seen    = new Set();   // dedup by linkedin_url
+    const seen    = new Set();
     let   pending = [];
-    let   totalSynced = 0;
     let   flushTimer  = null;
+    let   flushInFlight = false;
 
     injectScanBadge();
     updateScanBadge(0);
@@ -52,29 +78,28 @@
       pending.push(profile);
       updateScanBadge(seen.size);
 
+      clearTimeout(flushTimer);
       if (pending.length >= 50) {
-        clearTimeout(flushTimer);
         flush();
       } else {
-        clearTimeout(flushTimer);
         flushTimer = setTimeout(flush, 2000);
       }
     }
 
     function flush() {
-      if (!pending.length) return;
+      if (!pending.length || flushInFlight) return;
       const batch = pending.splice(0, 50);
-      totalSynced += batch.length;
-      chrome.runtime.sendMessage(
+      flushInFlight = true;
+
+      sendWithRetry(
         { type: 'CONNECTIONS_BATCH', data: batch, total: seen.size },
-        () => { if (chrome.runtime.lastError) {} }
+        3,
+        () => { flushInFlight = false; }
       );
     }
 
-    // Capture cards already in the DOM
-    queryCards(document).forEach(processCard);
-
-    // Watch for new cards as user scrolls (LinkedIn uses virtual rendering)
+    // ── Start observer FIRST to avoid the timing gap where cards appear
+    //    between queryCards() and observer.observe().
     const observer = new MutationObserver(mutations => {
       for (const m of mutations) {
         for (const node of m.addedNodes) {
@@ -89,80 +114,95 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // Flush on page unload so nothing is lost
-    window.addEventListener('beforeunload', flush, { once: true });
+    // Capture cards already in the DOM after observer is live
+    queryCards(document).forEach(processCard);
+
+    // Flush remaining cards on page unload
+    window.addEventListener('beforeunload', () => {
+      clearTimeout(flushTimer);
+      flush();
+    }, { once: true });
   }
 
-  function queryCards(root) {
-    return [
-      ...root.querySelectorAll(
-        'li.mn-connection-card, ' +
-        'li[class*="reusable-search__result-container"], ' +
-        'li[class*="entity-result"]'
-      )
-    ];
-  }
-
-  function isConnectionCard(el) {
-    return el.matches?.(
-      'li.mn-connection-card, ' +
-      'li[class*="reusable-search__result-container"], ' +
-      'li[class*="entity-result"]'
-    );
-  }
+  // ── Card Extraction ────────────────────────────────────────────────────────
+  // Tries multiple selector strategies for each field to handle LinkedIn
+  // layout changes. Returns null if no usable linkedin_url or name found.
 
   function extractConnectionCard(card) {
-    // Find the primary /in/ profile link — skip overlay / messaging links
+    // Primary /in/ link — skip overlay, messaging, mutual-connection links
     const link = [...card.querySelectorAll('a[href]')].find(a => {
       const href = a.getAttribute('href') || '';
-      return /^\/in\/[^/]/.test(href) && !href.includes('/overlay/');
+      return /^\/in\/[^/?#]/.test(href) &&
+             !href.includes('/overlay/') &&
+             !href.includes('/messaging/') &&
+             !href.includes('/search/');
     });
     if (!link) return null;
 
     const rawPath    = link.getAttribute('href').split('?')[0].replace(/\/$/, '');
     const linkedin_url = `https://www.linkedin.com${rawPath}`;
 
-    // Name — multiple selector strategies for different LinkedIn layouts
+    // Name — ordered from most specific to most generic
     const name =
+      // Modern layout: mn-connection-card__name
+      qText(card, '.mn-connection-card__name') ||
       qText(card, '[class*="connection-card__name"]') ||
-      qText(card, '[class*="entity-result__title-line"] span[aria-hidden] span:first-child') ||
-      qText(card, 'h3 span[aria-hidden] span:first-child') ||
-      // aria-label on the link itself: "View John Doe's profile"
-      link.getAttribute('aria-label')
-          ?.replace(/^(View\s+)?/i, '')
-          .replace(/'?s\s+profile$/i, '')
-          .trim() ||
+      // Search/entity-result layout
+      qText(card, '.entity-result__title-text > span[aria-hidden="true"]') ||
+      qText(card, '[class*="entity-result__title-text"] span[aria-hidden="true"]') ||
+      qText(card, '[class*="entity-result__title-line"] span[aria-hidden="true"]') ||
+      // Generic: first visible span inside h3
+      qText(card, 'h3 span[aria-hidden="true"]') ||
+      qText(card, 'h3 > span:not(.visually-hidden)') ||
+      // aria-label fallback: "View John Doe's profile" or just "John Doe"
+      parseAriaLabel(link.getAttribute('aria-label')) ||
       null;
 
     if (!name) return null;
 
     const headline =
+      qText(card, '.mn-connection-card__occupation') ||
       qText(card, '[class*="connection-card__occupation"]') ||
+      qText(card, '.entity-result__primary-subtitle') ||
       qText(card, '[class*="entity-result__primary-subtitle"]') ||
       qText(card, '.t-14.t-black--light.t-normal') ||
       null;
 
+    // Profile pic — prefer ghost-free CDN URLs
     const profile_pic =
-      qAttr(card, 'img[src*="licdn.com"]', 'src') ||
-      qAttr(card, 'img[src*="media.linkedin"]', 'src') ||
+      qAttr(card, 'img[src*="licdn.com"]:not([src*="ghost"])', 'src') ||
+      qAttr(card, 'img[src*="media.licdn.com"]', 'src') ||
+      qAttr(card, 'img[src*="linkedin.com"]', 'src') ||
       null;
 
     return {
       linkedin_url,
       name,
       headline,
-      company:           null,  // enriched server-side from headline
+      company:           null,   // extracted server-side from headline
       profile_pic,
       connection_degree: 1,
       captured_at:       new Date().toISOString(),
     };
   }
 
+  function parseAriaLabel(label) {
+    if (!label) return null;
+    // "View John Doe's profile" → "John Doe"
+    // "John Doe's profile" → "John Doe"
+    // "John Doe" → "John Doe"
+    return label
+      .replace(/^View\s+/i, '')
+      .replace(/['']s\s+profile$/i, '')
+      .replace(/\s+profile$/i, '')
+      .trim() || null;
+  }
+
   // ── In-page scan badge ─────────────────────────────────────────────────────
 
   function injectScanBadge() {
     if (document.getElementById('nexo-scan-badge')) return;
-    injectButtonStyles();
+    injectStyles();
 
     const badge = document.createElement('div');
     badge.id = 'nexo-scan-badge';
@@ -188,9 +228,7 @@
   function captureCurrentProfile() {
     const profile = extractProfileFromDOM();
     if (!profile.name) return;
-    chrome.runtime.sendMessage({ type: 'PROFILE_CAPTURED', data: profile }, () => {
-      if (chrome.runtime.lastError) {}
-    });
+    sendWithRetry({ type: 'PROFILE_CAPTURED', data: profile }, 3);
   }
 
   function extractProfileFromDOM() {
@@ -201,8 +239,9 @@
       headline:          text('.text-body-medium.break-words') || text('div[data-field="headline"]'),
       company:           extractCurrentCompany(),
       location:          text('.text-body-small.inline.t-black--light.break-words'),
-      profile_pic:       attr('img.pv-top-card-profile-picture__image', 'src') ||
-                         attr('img.profile-photo-edit__preview', 'src'),
+      profile_pic:       attr('img.pv-top-card-profile-picture__image--photo', 'src') ||
+                         attr('img.profile-photo-edit__preview', 'src') ||
+                         attr('.pv-top-card__photo img', 'src'),
       connection_degree: extractConnectionDegree(),
       captured_at:       new Date().toISOString(),
     };
@@ -213,10 +252,10 @@
       '#experience ~ div li:first-child .t-14.t-normal, ' +
       'section[id*="experience"] li:first-child .t-14.t-normal'
     );
-    if (expEntry) return expEntry.innerText?.trim();
+    if (expEntry) return expEntry.innerText?.trim() || null;
 
     const aboutCompany = document.querySelector('span[aria-label*="Current company"]');
-    if (aboutCompany) return aboutCompany.innerText?.trim();
+    if (aboutCompany) return aboutCompany.innerText?.trim() || null;
 
     const headline = text('.text-body-medium.break-words');
     if (headline) {
@@ -241,7 +280,10 @@
   function injectNexoButton() {
     if (document.getElementById('nexo-save-btn')) return;
 
-    const actionBar = document.querySelector('.pvs-profile-actions, .pv-top-card-v2-ctas');
+    const actionBar = document.querySelector(
+      '.pvs-profile-actions, .pv-top-card-v2-ctas, ' +
+      '[class*="profile-actions"], [class*="pv-top-card__cta"]'
+    );
     if (!actionBar) {
       setTimeout(injectNexoButton, 1500);
       return;
@@ -265,7 +307,7 @@
       btn.disabled = true;
       btn.innerHTML = '<span class="nexo-spinner"></span> Saving…';
 
-      chrome.runtime.sendMessage({ type: 'PROFILE_CAPTURED', data: extractProfileFromDOM() }, (res) => {
+      sendWithRetry({ type: 'PROFILE_CAPTURED', data: extractProfileFromDOM() }, 2, (res) => {
         if (res?.success) {
           btn.innerHTML = '✓ Saved';
           btn.style.background = '#22c55e';
@@ -282,67 +324,70 @@
     });
 
     actionBar.prepend(btn);
-    injectButtonStyles();
+    injectStyles();
   }
 
-  function injectButtonStyles() {
+  // ── sendMessage with retry ─────────────────────────────────────────────────
+  // Chrome's background service worker can be suspended; retry up to maxAttempts.
+
+  function sendWithRetry(message, maxAttempts, onDone) {
+    let attempts = 0;
+
+    function attempt() {
+      attempts++;
+      chrome.runtime.sendMessage(message, (res) => {
+        if (chrome.runtime.lastError) {
+          if (attempts < maxAttempts) {
+            setTimeout(attempt, 500 * attempts);
+          } else {
+            console.warn('[Nexo] sendMessage failed after retries:', chrome.runtime.lastError.message);
+            onDone?.(null);
+          }
+          return;
+        }
+        onDone?.(res);
+      });
+    }
+
+    attempt();
+  }
+
+  // ── Styles ────────────────────────────────────────────────────────────────
+
+  function injectStyles() {
     if (document.getElementById('nexo-styles')) return;
     const style = document.createElement('style');
     style.id = 'nexo-styles';
     style.textContent = `
       .nexo-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 16px;
-        background: #6366f1;
-        color: #fff;
-        border: none;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-        margin-right: 8px;
-        height: 32px;
-        white-space: nowrap;
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 16px; background: #6366f1; color: #fff;
+        border: none; border-radius: 20px; font-size: 14px;
+        font-weight: 600; cursor: pointer; transition: background 0.2s;
+        margin-right: 8px; height: 32px; white-space: nowrap;
       }
       .nexo-btn:hover { background: #4f46e5; }
       .nexo-btn:disabled { opacity: 0.7; cursor: not-allowed; }
       .nexo-spinner {
         width: 12px; height: 12px;
         border: 2px solid rgba(255,255,255,0.4);
-        border-top-color: #fff;
-        border-radius: 50%;
+        border-top-color: #fff; border-radius: 50%;
         display: inline-block;
         animation: nexo-spin 0.6s linear infinite;
       }
       @keyframes nexo-spin { to { transform: rotate(360deg); } }
 
       #nexo-scan-badge {
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        z-index: 99999;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 14px;
-        background: #1e1b4b;
-        color: #fff;
-        border-radius: 12px;
-        font-size: 13px;
+        position: fixed; bottom: 24px; right: 24px; z-index: 99999;
+        display: flex; align-items: center; gap: 8px;
+        padding: 10px 14px; background: #1e1b4b; color: #fff;
+        border-radius: 12px; font-size: 13px;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         box-shadow: 0 4px 20px rgba(0,0,0,0.3);
       }
       #nexo-scan-close {
-        background: none;
-        border: none;
-        color: rgba(255,255,255,0.5);
-        cursor: pointer;
-        font-size: 12px;
-        padding: 0 0 0 4px;
-        line-height: 1;
+        background: none; border: none; color: rgba(255,255,255,0.5);
+        cursor: pointer; font-size: 12px; padding: 0 0 0 4px; line-height: 1;
       }
       #nexo-scan-close:hover { color: #fff; }
     `;
@@ -380,27 +425,29 @@
   }
 
   // ── SPA navigation watcher ─────────────────────────────────────────────────
-  // LinkedIn never does full page reloads — watch for URL changes.
+  // LinkedIn never does full page reloads; watch for URL changes via pushState.
 
   let lastUrl = window.location.href;
   new MutationObserver(() => {
-    if (window.location.href === lastUrl) return;
-    lastUrl = window.location.href;
-    window.__nexoInjected  = false;
-    window.__nexoScanActive = false;
+    const currentUrl = window.location.href;
+    if (currentUrl === lastUrl) return;
+    lastUrl = currentUrl;
 
-    if (window.location.pathname.startsWith('/in/')) {
-      window.__nexoInjected = true;
+    // Full reset for new page
+    window.__nexoScanActive = false;
+    const existing = document.getElementById('nexo-scan-badge');
+    if (existing) existing.remove();
+
+    if (isProfilePage()) {
       waitForElement('h1', () => {
         captureCurrentProfile();
-        injectNexoButton();
+        if (!document.getElementById('nexo-save-btn')) injectNexoButton();
       });
     }
 
-    if (window.location.pathname.includes('/mynetwork/invite-connect/connections')) {
-      window.__nexoInjected = true;
+    if (isConnectionsPage()) {
       waitForElement(
-        '.mn-connections__list, [class*="scaffold-finite-scroll__content"], li.mn-connection-card',
+        CONNECTION_CARD_SELECTORS.join(', '),
         startConnectionsCapture,
         15000
       );

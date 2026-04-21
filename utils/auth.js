@@ -6,7 +6,7 @@
  *   Pastes into extension popup once → stored in chrome.storage.local
  */
 
-const PROD_API = 'https://187.127.129.125.nip.io';
+const PROD_API = 'https://web-production-c03054.up.railway.app';
 const DEV_API  = 'http://localhost:3000';
 
 export async function getApiBase() {
