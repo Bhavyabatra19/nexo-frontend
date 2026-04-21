@@ -445,6 +445,10 @@ class SettingsService {
     async deleteAccount() {
         return fetchWithAuth(`${API_BASE}/settings/account`, { method: 'DELETE' });
     }
+
+    async getExtensionToken() {
+        return fetchWithAuth(`${API_BASE}/settings/extension-token`);
+    }
 }
 
 export const settingsService = new SettingsService();

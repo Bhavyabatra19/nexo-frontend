@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Mail, MessageCircle, Save, Loader2, Trash2, Send } from 'lucide-react';
+import { Mail, MessageCircle, Save, Loader2, Trash2, Send, Puzzle, Copy, Check, Download } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -78,6 +78,9 @@ export default function SettingsPage() {
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSendingTest, setIsSendingTest] = useState(false);
+    const [extensionToken, setExtensionToken] = useState<string | null>(null);
+    const [isGeneratingToken, setIsGeneratingToken] = useState(false);
+    const [tokenCopied, setTokenCopied] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -164,6 +167,29 @@ export default function SettingsPage() {
         } finally {
             setIsSendingTest(false);
         }
+    };
+
+    const handleGenerateToken = async () => {
+        setIsGeneratingToken(true);
+        try {
+            const response = await settingsService.getExtensionToken();
+            if (response.success) {
+                setExtensionToken(response.token);
+            } else {
+                toast.error(response.error || 'Failed to generate token.');
+            }
+        } catch {
+            toast.error('Failed to generate token. Please try again.');
+        } finally {
+            setIsGeneratingToken(false);
+        }
+    };
+
+    const handleCopyToken = () => {
+        if (!extensionToken) return;
+        navigator.clipboard.writeText(extensionToken);
+        setTokenCopied(true);
+        setTimeout(() => setTokenCopied(false), 2000);
     };
 
     const handleDeleteAccount = async () => {
@@ -351,6 +377,78 @@ export default function SettingsPage() {
                                 </div>
                             </form>
                         </Form>
+                    </CardContent>
+                </Card>
+
+                {/* Chrome Extension */}
+                <Card className="border-border bg-card">
+                    <CardHeader>
+                        <CardTitle className="text-xl flex items-center gap-2">
+                            <Puzzle className="h-5 w-5 text-primary" />
+                            Chrome Extension
+                        </CardTitle>
+                        <CardDescription>
+                            Connect the Nexo Chrome extension to sync your LinkedIn network automatically.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between rounded-lg border border-border bg-background p-4">
+                            <div>
+                                <p className="font-medium text-sm text-foreground">Download Extension</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    Load unpacked in Chrome → Developer Mode → Load unpacked
+                                </p>
+                            </div>
+                            <Button variant="outline" size="sm" asChild>
+                                <a href={`${process.env.NEXT_PUBLIC_API_URL}/public/nexo-extension.zip`} download>
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Download
+                                </a>
+                            </Button>
+                        </div>
+
+                        <div className="rounded-lg border border-border bg-background p-4 space-y-3">
+                            <div>
+                                <p className="font-medium text-sm text-foreground">Extension Token</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    Generate a token, then paste it into the extension popup to connect your account.
+                                </p>
+                            </div>
+
+                            {extensionToken ? (
+                                <div className="space-y-2">
+                                    <div className="flex gap-2">
+                                        <Input
+                                            readOnly
+                                            value={extensionToken}
+                                            className="font-mono text-xs"
+                                            onClick={e => (e.target as HTMLInputElement).select()}
+                                        />
+                                        <Button variant="outline" size="sm" onClick={handleCopyToken} className="shrink-0">
+                                            {tokenCopied
+                                                ? <><Check className="h-4 w-4 mr-1 text-green-500" />Copied</>
+                                                : <><Copy className="h-4 w-4 mr-1" />Copy</>
+                                            }
+                                        </Button>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Valid for 90 days. Keep this token private — it grants access to your Nexo account.
+                                    </p>
+                                </div>
+                            ) : (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleGenerateToken}
+                                    disabled={isGeneratingToken}
+                                >
+                                    {isGeneratingToken
+                                        ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating…</>
+                                        : 'Generate Token'
+                                    }
+                                </Button>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
 
