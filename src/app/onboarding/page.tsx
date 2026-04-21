@@ -15,10 +15,21 @@ export default function OnboardingPage() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ imported?: number; created?: number } | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [extToken, setExtToken] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authService.isAuthenticated()) router.push('/');
   }, [router]);
+
+  useEffect(() => {
+    // Pre-fetch extension token so it's ready on step 1
+    fetch(`${API_BASE}/settings/extension-token`, {
+      headers: authService.getAuthHeaders(),
+    })
+      .then(r => r.json())
+      .then(d => { if (d.token) setExtToken(d.token); })
+      .catch(() => {});
+  }, []);
 
   async function handleLinkedInSync() {
     setSyncing(true);
@@ -54,7 +65,7 @@ export default function OnboardingPage() {
       </div>
 
       <div className="w-full max-w-md">
-        {step === 'extension' && <ExtensionStep onNext={() => setStep('linkedin')} downloadUrl={EXT_DOWNLOAD} />}
+        {step === 'extension' && <ExtensionStep onNext={() => setStep('linkedin')} downloadUrl={EXT_DOWNLOAD} extToken={extToken} />}
         {step === 'linkedin' && (
           <LinkedInStep
             onSync={handleLinkedInSync}
@@ -69,7 +80,15 @@ export default function OnboardingPage() {
   );
 }
 
-function ExtensionStep({ onNext, downloadUrl }: { onNext: () => void; downloadUrl: string }) {
+function ExtensionStep({ onNext, downloadUrl, extToken }: { onNext: () => void; downloadUrl: string; extToken: string | null }) {
+  const [copied, setCopied] = useState(false);
+
+  function copyToken() {
+    if (!extToken) return;
+    navigator.clipboard.writeText(extToken);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
   return (
     <div className="text-center">
       <div className="w-16 h-16 bg-[#0047AB]/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -102,13 +121,32 @@ function ExtensionStep({ onNext, downloadUrl }: { onNext: () => void; downloadUr
       <a
         href={downloadUrl}
         download
-        className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-[#0047AB] text-white rounded-xl font-semibold text-sm hover:bg-[#003682] transition-colors mb-3"
+        className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-[#0047AB] text-white rounded-xl font-semibold text-sm hover:bg-[#003682] transition-colors mb-4"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
         </svg>
         Download Extension
       </a>
+
+      {extToken && (
+        <div className="bg-gray-50 rounded-xl p-4 mb-4 text-left">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Your API Token</p>
+          <p className="text-xs text-gray-500 mb-3">After installing, the extension will ask for this token. Copy it now.</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-xs bg-white border border-gray-200 rounded-lg px-3 py-2 font-mono truncate text-gray-700">
+              {extToken}
+            </code>
+            <button
+              onClick={copyToken}
+              className="shrink-0 px-3 py-2 bg-[#0047AB] text-white text-xs font-semibold rounded-lg hover:bg-[#003682] transition-colors"
+            >
+              {copied ? '✓ Copied' : 'Copy'}
+            </button>
+          </div>
+        </div>
+      )}
+
       <button onClick={onNext} className="w-full py-3 text-sm text-gray-400 hover:text-gray-600 transition-colors">
         I'll install it later →
       </button>
@@ -128,43 +166,40 @@ function LinkedInStep({
           <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
         </svg>
       </div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Import your LinkedIn network</h1>
-      <p className="text-gray-500 mb-8 text-sm leading-relaxed">
-        Nexo will enrich your existing contacts using Bright Data. Or skip and let the extension capture profiles as you browse LinkedIn.
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Sync your LinkedIn network</h1>
+      <p className="text-gray-500 mb-6 text-sm leading-relaxed">
+        The extension will automatically sync your connections as you browse LinkedIn. Click the extension icon and hit <strong>"Sync Now"</strong> to pull all your connections immediately.
       </p>
 
       {error && (
         <div className="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>
       )}
 
-      <div className="bg-blue-50 rounded-xl p-4 text-left mb-8">
-        <p className="text-xs font-semibold text-[#0047AB] mb-2">What gets imported</p>
-        <ul className="space-y-1.5 text-sm text-gray-600">
-          {['Full name, headline, photo', 'Work history & education', 'Skills & location', 'Connection degree'].map(item => (
-            <li key={item} className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-              {item}
-            </li>
-          ))}
-        </ul>
+      <div className="bg-gray-50 rounded-xl p-5 text-left mb-6 space-y-3">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">How it works</p>
+        {[
+          'Open LinkedIn in your browser',
+          'Click the Nexo extension icon in your toolbar',
+          'Hit "Sync Now" — pulls all your connections',
+          'Nexo enriches each profile with work history & education',
+        ].map((s, i) => (
+          <div key={i} className="flex items-start gap-3">
+            <span className="w-5 h-5 rounded-full bg-[#0A66C2] text-white text-xs flex items-center justify-center shrink-0 mt-0.5 font-semibold">{i + 1}</span>
+            <span className="text-sm text-gray-600">{s}</span>
+          </div>
+        ))}
       </div>
 
-      <button
-        onClick={onSync}
-        disabled={syncing}
-        className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-[#0047AB] text-white rounded-xl font-semibold text-sm hover:bg-[#003682] transition-colors disabled:opacity-60 disabled:cursor-not-allowed mb-3"
+      <a
+        href="https://www.linkedin.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-[#0A66C2] text-white rounded-xl font-semibold text-sm hover:bg-[#004182] transition-colors mb-3"
       >
-        {syncing ? (
-          <>
-            <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-            Enriching contacts…
-          </>
-        ) : 'Start enrichment'}
-      </button>
+        Open LinkedIn →
+      </a>
       <button onClick={onSkip} className="w-full py-3 text-sm text-gray-400 hover:text-gray-600 transition-colors">
-        Skip for now →
+        I'll do this later →
       </button>
     </div>
   );
