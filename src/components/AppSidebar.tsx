@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Users, Bell, Upload, Settings, LogOut, ChevronDown, ChevronRight, ChevronLeft, Plus, List as ListIcon, Pencil, Sparkles, Tag, GitMerge } from 'lucide-react';
+import { Users, Bell, Upload, Settings, LogOut, ChevronDown, ChevronRight, ChevronLeft, Plus, List as ListIcon, Pencil, Sparkles, Tag, GitMerge, Linkedin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { authService, organizeService } from '@/services/api';
 import { useState, useEffect, useCallback } from 'react';
@@ -12,6 +12,7 @@ const navItems = [
   { id: 'nexo-ai', label: 'Nexo AI', icon: Sparkles, href: '/dashboard/nexo-ai' },
   { id: 'reminders', label: 'Reminders', icon: Bell, href: '/dashboard/reminders' },
   { id: 'dedup', label: 'Merge & Fix', icon: GitMerge, href: '/dashboard/dedup' },
+  { id: 'linkedin', label: 'LinkedIn Setup', icon: Linkedin, href: '/onboarding' },
   { id: 'import', label: 'Import', icon: Upload, href: '/dashboard/import' },
   { id: 'settings', label: 'Settings', icon: Settings, href: '/dashboard/settings' },
 ];

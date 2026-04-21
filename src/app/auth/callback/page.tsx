@@ -21,13 +21,15 @@ function AuthCallbackContent() {
             const refreshToken = searchParams.get('refreshToken');
 
             if (accessToken && refreshToken) {
+                const isNew = !authService.isAuthenticated();
                 authService.handleAuthCallback({ accessToken, refreshToken });
-                router.push('/dashboard');
+                // New users go through onboarding, returning users go to dashboard
+                router.push(isNew ? '/onboarding' : '/dashboard/contacts');
             } else {
                 // Fallback: If backend set httpOnly cookies
                 const user = await authService.getCurrentUser();
                 if (user.success) {
-                    router.push('/dashboard');
+                    router.push('/dashboard/contacts');
                 } else {
                     setError('Authentication failed - missing tokens');
                 }
