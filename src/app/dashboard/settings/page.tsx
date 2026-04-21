@@ -400,7 +400,7 @@ export default function SettingsPage() {
                                 </p>
                             </div>
                             <Button variant="outline" size="sm" asChild>
-                                <a href={`${process.env.NEXT_PUBLIC_API_URL}/public/nexo-extension.zip`} download>
+                                <a href={`${process.env.NEXT_PUBLIC_API_BASE?.replace('/api', '')}/public/nexo-extension.zip`} download>
                                     <Download className="h-4 w-4 mr-2" />
                                     Download
                                 </a>
