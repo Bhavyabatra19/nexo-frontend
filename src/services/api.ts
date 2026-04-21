@@ -333,6 +333,24 @@ class LinkedInService {
     async cancel() {
         return fetchWithAuth(`${API_BASE}/linkedin/cancel`, { method: 'DELETE' });
     }
+
+    importByUrl(urls: string[]): EventSource {
+        // Returns a raw fetch Response for SSE — caller handles the stream
+        const ctrl = new AbortController();
+        const token = authService.getAccessToken();
+        // We return the fetch promise wrapped in an object the component can consume
+        const promise = fetch(`${API_BASE}/linkedin/import-by-url`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ urls }),
+            signal: ctrl.signal,
+        });
+        (promise as any).abort = () => ctrl.abort();
+        return promise as any;
+    }
 }
 
 export const linkedinService = new LinkedInService();
