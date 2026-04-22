@@ -6,8 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Users, Plus, Copy, Check, ArrowRight, Crown } from 'lucide-react';
 import { groupsService } from '@/services/api';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 
 function CopyButton({ text }: { text: string }) {
@@ -73,9 +71,8 @@ function GroupCard({ group }: { group: any }) {
 
 export default function GroupsPage() {
   const router = useRouter();
-  const { toast } = useToast();
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['groups'],
     queryFn: () => groupsService.listGroups(),
   });

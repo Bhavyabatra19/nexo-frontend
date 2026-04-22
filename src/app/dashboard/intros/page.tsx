@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Clock, CheckCircle, XCircle, Sparkles, Copy, Check } from 'lucide-react';
 import { introsService } from '@/services/api';
 import { Button } from '@/components/ui/button';
@@ -161,9 +161,6 @@ function ReceivedIntroCard({ intro, onAction }: { intro: any; onAction: () => vo
 }
 
 export default function IntrosPage() {
-  const { toast } = useToast();
-  const qc = useQueryClient();
-
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['intros'],
     queryFn: () => introsService.listIntros(),

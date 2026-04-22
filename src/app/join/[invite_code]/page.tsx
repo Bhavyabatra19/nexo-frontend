@@ -13,8 +13,6 @@ export default function JoinGroupPage() {
   const { toast } = useToast();
 
   const [joining, setJoining] = useState(false);
-  const [groupName, setGroupName] = useState<string>('');
-  const [memberCount, setMemberCount] = useState<number>(0);
   const isLoggedIn = authService.isAuthenticated();
 
   // Store invite code so we can use it after login
