@@ -2,13 +2,16 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Users, Bell, Upload, Settings, LogOut, ChevronDown, ChevronRight, ChevronLeft, Plus, List as ListIcon, Pencil, Sparkles, Tag, GitMerge, Linkedin } from 'lucide-react';
+import { Users, Bell, Upload, Settings, LogOut, ChevronDown, ChevronRight, ChevronLeft, Plus, List as ListIcon, Pencil, Sparkles, Tag, GitMerge, Linkedin, Search, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { authService, organizeService } from '@/services/api';
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const navItems = [
+  { id: 'search', label: 'Search', icon: Search, href: '/dashboard/search' },
+  { id: 'groups', label: 'Communities', icon: Users, href: '/dashboard/groups' },
+  { id: 'intros', label: 'Introductions', icon: ArrowRight, href: '/dashboard/intros' },
   { id: 'nexo-ai', label: 'Nexo AI', icon: Sparkles, href: '/dashboard/nexo-ai' },
   { id: 'reminders', label: 'Reminders', icon: Bell, href: '/dashboard/reminders' },
   { id: 'dedup', label: 'Merge & Fix', icon: GitMerge, href: '/dashboard/dedup' },

@@ -519,3 +519,87 @@ class AiService {
 }
 
 export const aiService = new AiService();
+
+// ─── Groups Service ────────────────────────────────────────────────────────
+
+class GroupsService {
+    async createGroup(data: { name: string; description?: string; logo_url?: string }) {
+        return fetchWithAuth(`${API_BASE}/groups`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async listGroups() {
+        return fetchWithAuth(`${API_BASE}/groups`);
+    }
+
+    async getGroup(id: string) {
+        return fetchWithAuth(`${API_BASE}/groups/${id}`);
+    }
+
+    async joinGroup(inviteCode: string) {
+        return fetchWithAuth(`${API_BASE}/groups/join/${inviteCode}`, { method: 'POST' });
+    }
+
+    async giveConsent(groupId: string) {
+        return fetchWithAuth(`${API_BASE}/groups/${groupId}/consent`, { method: 'POST' });
+    }
+
+    async getMembers(groupId: string) {
+        return fetchWithAuth(`${API_BASE}/groups/${groupId}/members`);
+    }
+
+    async removeMember(groupId: string, memberId: string) {
+        return fetchWithAuth(`${API_BASE}/groups/${groupId}/members/${memberId}`, { method: 'DELETE' });
+    }
+
+}
+
+export const groupsService = new GroupsService();
+
+// ─── Search Service ────────────────────────────────────────────────────────
+
+class SearchService {
+    async search(query: string, scope: 'personal' | 'group' | 'all', groupId?: string) {
+        const params = new URLSearchParams({ q: query, scope });
+        if (groupId) params.set('group_id', groupId);
+        return fetchWithAuth(`${API_BASE}/search?${params}`);
+    }
+}
+
+export const searchService = new SearchService();
+
+// ─── Intros Service ────────────────────────────────────────────────────────
+
+class IntrosService {
+    async requestIntro(data: {
+        connector_id: string;
+        target_contact_id: string;
+        context: string;
+        preferred_method?: string;
+        group_id?: string;
+    }) {
+        return fetchWithAuth(`${API_BASE}/intros`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async listIntros() {
+        return fetchWithAuth(`${API_BASE}/intros`);
+    }
+
+    async approveIntro(id: string, connector_note?: string) {
+        return fetchWithAuth(`${API_BASE}/intros/${id}/approve`, {
+            method: 'POST',
+            body: JSON.stringify({ connector_note }),
+        });
+    }
+
+    async denyIntro(id: string) {
+        return fetchWithAuth(`${API_BASE}/intros/${id}/deny`, { method: 'POST' });
+    }
+}
+
+export const introsService = new IntrosService();
