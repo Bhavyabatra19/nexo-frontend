@@ -1075,6 +1075,63 @@ const ContactDetail = ({ contact, onClose, onUpdate, onDelete, listId }: Contact
               )}
             </div>
 
+            {/* Experience (from LinkedIn extension / Bright Data) */}
+            {contact.experience && contact.experience.length > 0 && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Experience</h3>
+                <div className="space-y-3">
+                  {contact.experience.map((role, idx) => (
+                    <div key={idx} className="flex gap-3 text-xs">
+                      <Briefcase className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-foreground truncate">
+                          {role.title || 'Role'}
+                          {role.current && (
+                            <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-primary/10 text-primary">CURRENT</span>
+                          )}
+                        </div>
+                        {role.company && <div className="text-muted-foreground truncate">{role.company}</div>}
+                        {role.dates && <div className="text-[10px] text-muted-foreground/70 mt-0.5">{role.dates}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Education */}
+            {contact.education && contact.education.length > 0 && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Education</h3>
+                <div className="space-y-3">
+                  {contact.education.map((edu, idx) => (
+                    <div key={idx} className="flex gap-3 text-xs">
+                      <Building2 className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-foreground truncate">{edu.school || 'School'}</div>
+                        {edu.degree && <div className="text-muted-foreground truncate">{edu.degree}</div>}
+                        {edu.dates && <div className="text-[10px] text-muted-foreground/70 mt-0.5">{edu.dates}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Skills */}
+            {contact.skills && contact.skills.length > 0 && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Skills</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {contact.skills.map((skill, idx) => (
+                    <span key={idx} className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-secondary text-secondary-foreground">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
         </TabsContent>
 

@@ -24,6 +24,9 @@ export interface Contact {
   instagram_url?: string;
   customLinks?: { label: string; url: string }[];
   custom_links?: { label: string; url: string }[];
+  experience?: { title?: string | null; company?: string | null; dates?: string | null; current?: boolean }[];
+  education?: { school?: string | null; degree?: string | null; dates?: string | null }[];
+  skills?: string[];
 }
 
 export interface NoteEntry {
