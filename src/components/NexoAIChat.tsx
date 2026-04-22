@@ -74,10 +74,7 @@ export default function NexoAIChat() {
   // Track whether the next messages update should scroll to bottom
   const shouldScrollToBottom = useRef(true);
 
-  const getAuthHeader = () => {
-    const accessToken = localStorage.getItem("accessToken");
-    return { Authorization: `Bearer ${accessToken}` };
-  };
+  const getAuthHeader = () => ({}); // cookies now carry auth — kept as no-op for call sites
 
   // ── Sync status ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -95,6 +92,7 @@ export default function NexoAIChat() {
   const fetchSyncStatus = async () => {
     try {
       const res = await fetch(`${API_BASE}/ai/sync-pinecone/status`, {
+        credentials: 'include',
         headers: getAuthHeader(),
       });
       const data = await res.json();
@@ -113,6 +111,7 @@ export default function NexoAIChat() {
     try {
       const res = await fetch(`${API_BASE}/ai/sync-pinecone`, {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json", ...getAuthHeader() },
         body: JSON.stringify({ force: false }),
       });
@@ -138,7 +137,7 @@ export default function NexoAIChat() {
       const url = before
         ? `${API_BASE}/ai/history?limit=20&before=${encodeURIComponent(before)}`
         : `${API_BASE}/ai/history?limit=20`;
-      const res = await fetch(url, { headers: getAuthHeader() });
+      const res = await fetch(url, { credentials: 'include', headers: getAuthHeader() });
       const data = await res.json();
       if (!data.success) return;
       return { messages: data.messages as Message[], hasMore: data.hasMore as boolean };
@@ -254,6 +253,7 @@ export default function NexoAIChat() {
     try {
       const res = await fetch(`${API_BASE}/ai/chat`, {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json", ...getAuthHeader() },
         body: JSON.stringify({ message: trimmed, searchNotes }),
       });

@@ -17,22 +17,14 @@ function AuthCallbackContent() {
 
     async function handleCallback() {
         try {
-            const accessToken = searchParams.get('accessToken');
-            const refreshToken = searchParams.get('refreshToken');
-
-            if (accessToken && refreshToken) {
-                const isNew = !authService.isAuthenticated();
-                authService.handleAuthCallback({ accessToken, refreshToken });
-                // New users go through onboarding, returning users go to dashboard
+            // Backend has already set httpOnly cookies via the OAuth redirect; verify via /auth/me.
+            const isNew = searchParams.get('new') === '1';
+            const user = await authService.getCurrentUser();
+            if (user?.success) {
+                authService.markAuthenticated();
                 router.push(isNew ? '/onboarding' : '/dashboard/contacts');
             } else {
-                // Fallback: If backend set httpOnly cookies
-                const user = await authService.getCurrentUser();
-                if (user.success) {
-                    router.push('/dashboard/contacts');
-                } else {
-                    setError('Authentication failed - missing tokens');
-                }
+                setError('Authentication failed — session not established.');
             }
         } catch (err) {
             console.error('Auth callback error:', err);

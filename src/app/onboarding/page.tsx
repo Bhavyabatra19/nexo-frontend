@@ -24,6 +24,7 @@ export default function OnboardingPage() {
   useEffect(() => {
     // Pre-fetch extension token so it's ready on step 1
     fetch(`${API_BASE}/settings/extension-token`, {
+      credentials: 'include',
       headers: authService.getAuthHeaders(),
     })
       .then(r => r.json())
@@ -35,10 +36,10 @@ export default function OnboardingPage() {
     setSyncing(true);
     setSyncError(null);
     try {
-      const headers = authService.getAuthHeaders();
       const res = await fetch(`${API_BASE}/linkedin/bulk-enrich`, {
         method: 'POST',
-        headers,
+        credentials: 'include',
+        headers: authService.getAuthHeaders(),
       });
       const data = await res.json();
       setSyncResult(data);

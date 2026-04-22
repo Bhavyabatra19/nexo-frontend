@@ -4,7 +4,6 @@ import React, { useState, useRef } from 'react';
 import { Loader2, CheckCircle2, AlertCircle, Link, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { authService } from '@/services/api';
 
 const LINKEDIN_RE = /^https?:\/\/(www\.)?linkedin\.com\/in\/[^/\s]+/i;
 const MAX_URLS    = 100;
@@ -51,10 +50,8 @@ export default function LinkedInURLImport() {
         `${process.env.NEXT_PUBLIC_API_BASE}/linkedin/import-by-url`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authService.getAccessToken()}`,
-          },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ urls: parsedUrls }),
         }
       );

@@ -38,13 +38,11 @@ const AppSidebar = () => {
   const checkBadges = useCallback(async () => {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE;
-      const token = authService.getAccessToken();
-      if (!token) return;
-      const headers = { Authorization: `Bearer ${token}` };
+      if (!authService.isAuthenticated()) return;
 
       const [ds, ls] = await Promise.all([
-        fetch(`${apiBase}/dedup/status`, { headers }).then(r => r.json()).catch(() => null),
-        fetch(`${apiBase}/linkedin/status`, { headers }).then(r => r.json()).catch(() => null),
+        fetch(`${apiBase}/dedup/status`, { credentials: 'include' }).then(r => r.json()).catch(() => null),
+        fetch(`${apiBase}/linkedin/status`, { credentials: 'include' }).then(r => r.json()).catch(() => null),
       ]);
 
       if (ds?.status === 'processing') setDedupBadge('running');

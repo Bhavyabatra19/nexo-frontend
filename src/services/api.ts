@@ -22,7 +22,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<an
             ...(options.headers as Record<string, string> || {}),
         };
 
-        const response = await fetch(url, { ...options, headers });
+        const response = await fetch(url, { ...options, headers, credentials: 'include' });
 
         if (response.status === 401) {
             await authService.refreshAccessToken();
@@ -47,6 +47,8 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<an
 
 // ─── Auth Service ──────────────────────────────────────────────────────────
 
+// Cookie-based auth (folkX-style). Tokens live in httpOnly cookies set by the backend.
+// `authed` in localStorage is a non-sensitive UX flag so sync isAuthenticated() keeps working.
 class AuthService {
     async getGoogleAuthUrl() {
         const response = await fetch(`${API_BASE}/auth/google`);
@@ -54,74 +56,55 @@ class AuthService {
         return data.authUrl;
     }
 
-    handleAuthCallback(tokens: { accessToken: string; refreshToken: string }) {
+    // Called by /auth/callback after the backend has already set cookies via redirect.
+    markAuthenticated() {
         if (typeof window !== 'undefined') {
-            localStorage.setItem('accessToken', tokens.accessToken);
-            localStorage.setItem('refreshToken', tokens.refreshToken);
+            localStorage.setItem('authed', '1');
         }
     }
 
-    getAccessToken() {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('accessToken');
-        }
-        return null;
-    }
-
-    getRefreshToken() {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('refreshToken');
-        }
-        return null;
+    // Legacy shim — callback page used to receive tokens in query params. Cookies now replace this.
+    handleAuthCallback(_tokens?: { accessToken?: string; refreshToken?: string }) {
+        this.markAuthenticated();
     }
 
     isAuthenticated() {
-        return !!this.getAccessToken();
+        if (typeof window === 'undefined') return false;
+        return localStorage.getItem('authed') === '1';
     }
 
     async refreshAccessToken() {
-        const refreshToken = this.getRefreshToken();
-
-        if (!refreshToken) {
-            throw new Error('No refresh token available');
-        }
-
         const response = await fetch(`${API_BASE}/auth/refresh`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken })
         });
 
-        const data = await response.json();
+        const data = await response.json().catch(() => ({ success: false }));
 
-        if (data.success) {
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('accessToken', data.accessToken);
-            }
-            return data.accessToken;
-        } else {
-            this.logout();
-            throw new Error('Failed to refresh token');
-        }
+        if (data.success) return data.accessToken;
+        this.logout();
+        throw new Error('Failed to refresh token');
     }
 
     async getCurrentUser() {
         return fetchWithAuth(`${API_BASE}/auth/me`);
     }
 
-    logout() {
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            window.location.href = '/';
-        }
+    async logout() {
+        if (typeof window === 'undefined') return;
+        try {
+            await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+        } catch {}
+        localStorage.removeItem('authed');
+        // Drop legacy token keys from pre-cookie builds
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '/';
     }
 
     getAuthHeaders(): Record<string, string> {
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.getAccessToken()}`
-        };
+        return { 'Content-Type': 'application/json' };
     }
 }
 
@@ -307,7 +290,7 @@ class LinkedInService {
         // Use raw fetch for multipart — fetchWithAuth sets Content-Type to JSON
         const response = await fetch(`${API_BASE}/linkedin/upload`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${authService.getAccessToken()}` },
+            credentials: 'include',
             body: formData,
         });
 
@@ -337,14 +320,10 @@ class LinkedInService {
     importByUrl(urls: string[]): EventSource {
         // Returns a raw fetch Response for SSE — caller handles the stream
         const ctrl = new AbortController();
-        const token = authService.getAccessToken();
-        // We return the fetch promise wrapped in an object the component can consume
         const promise = fetch(`${API_BASE}/linkedin/import-by-url`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ urls }),
             signal: ctrl.signal,
         });
