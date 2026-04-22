@@ -13,7 +13,7 @@
   ],
   "host_permissions": [
     "*://*.linkedin.com/*",
-    "https://web-production-c03054.up.railway.app/*",
+    "https://187.127.129.125.nip.io/*",
     "http://localhost:3000/*"
   ],
 
