@@ -129,7 +129,7 @@ function ResultCard({ result, onRequestIntro }: { result: SearchResult; onReques
   );
 }
 
-export default function SearchPage() {
+function SearchPage() {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState('');
