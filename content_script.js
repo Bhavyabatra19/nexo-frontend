@@ -229,6 +229,41 @@
     const profile = extractProfileFromDOM();
     if (!profile.name) return;
     sendWithRetry({ type: 'PROFILE_CAPTURED', data: profile }, 3);
+
+    // Deferred rich capture: experience/education sections load async via XHR.
+    // Wait for any of them to appear in the DOM, then re-capture and update.
+    waitForRichSections(() => {
+      const bio        = extractAbout();
+      const experience = extractExperience();
+      const education  = extractEducation();
+      const skills     = extractSkills();
+      if (bio || experience.length || education.length || skills.length) {
+        sendWithRetry({
+          type: 'PROFILE_CAPTURED',
+          data: { ...profile, bio, experience, education, skills },
+        }, 2);
+      }
+    });
+  }
+
+  function waitForRichSections(callback, maxWait = 9000) {
+    const RICH_SELECTOR =
+      '#experience, [data-view-name*="experience-section"], ' +
+      '#education,  [data-view-name*="education-section"]';
+
+    if (document.querySelector(RICH_SELECTOR)) {
+      setTimeout(callback, 400);
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      if (document.querySelector(RICH_SELECTOR)) {
+        observer.disconnect();
+        setTimeout(callback, 400);
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    setTimeout(() => { observer.disconnect(); callback(); }, maxWait);
   }
 
   function extractProfileFromDOM() {
@@ -245,6 +280,147 @@
       connection_degree: extractConnectionDegree(),
       captured_at:       new Date().toISOString(),
     };
+  }
+
+  // ── Rich Profile Data Extraction ─────────────────────────────────────────
+  // These run after experience/education sections have loaded in the DOM.
+  // Multiple selector strategies survive LinkedIn's frequent CSS renames.
+
+  function extractAbout() {
+    // Strategy 1: anchor id="about" — walk siblings for span text
+    const anchor = document.querySelector('div#about, section#about');
+    if (anchor) {
+      let sibling = anchor.nextElementSibling;
+      for (let i = 0; i < 6 && sibling; i++) {
+        const spans = [...sibling.querySelectorAll('span[aria-hidden="true"]')]
+          .filter(s => !s.closest('button') && (s.innerText || '').trim().length > 40);
+        if (spans.length) return spans[0].innerText.trim();
+        sibling = sibling.nextElementSibling;
+      }
+    }
+
+    // Strategy 2: h2 labelled "About" inside any section
+    for (const h2 of document.querySelectorAll('h2')) {
+      if ((h2.innerText || '').trim().toLowerCase() === 'about') {
+        const section = h2.closest('section') || h2.closest('div[class*="card"]');
+        const span = section?.querySelector('.inline-show-more-text span[aria-hidden="true"]') ||
+                     section?.querySelector('span[aria-hidden="true"]');
+        const t = (span?.innerText || '').trim();
+        if (t.length > 40) return t;
+      }
+    }
+
+    // Strategy 3: data-view-name attr (newer builds)
+    const aboutDiv = document.querySelector('[data-view-name*="about"]');
+    if (aboutDiv) {
+      const span = aboutDiv.querySelector('span[aria-hidden="true"]');
+      const t = (span?.innerText || '').trim();
+      if (t.length > 40) return t;
+    }
+
+    return null;
+  }
+
+  function extractExperience() {
+    const items = querySectionItems('experience');
+    return items.map(li => {
+      // Detect grouped (multiple roles at one company) vs single-role entry
+      const subItems = li.querySelectorAll('.pvs-list__item--one-column .pvs-entity');
+      if (subItems.length > 1) {
+        // Grouped: first bold = company, sub-items = individual roles
+        const company = qTextFirst(li, '.t-bold span[aria-hidden="true"]');
+        return [...subItems].map(sub => ({
+          title:   qTextFirst(sub, '.t-bold span[aria-hidden="true"]'),
+          company,
+          dates:   qTextFirst(sub, '.pvs-entity__caption-wrapper span[aria-hidden="true"]') ||
+                   qTextFirst(sub, '.t-14.t-normal.t-black--light span[aria-hidden="true"]'),
+          current: isCurrentRole(sub),
+        })).filter(r => r.title);
+      }
+
+      // Single-role entry
+      const bolds = [...li.querySelectorAll('.t-bold span[aria-hidden="true"], .mr1.t-bold span[aria-hidden="true"]')]
+        .map(s => (s.innerText || '').trim()).filter(Boolean);
+
+      return [{
+        title:   bolds[0] || null,
+        company: bolds[1] ||
+                 qTextFirst(li, '.t-14.t-normal:not(.t-black--light) span[aria-hidden="true"]'),
+        dates:   qTextFirst(li, '.pvs-entity__caption-wrapper span[aria-hidden="true"]') ||
+                 qTextFirst(li, '.t-14.t-normal.t-black--light span[aria-hidden="true"]'),
+        current: isCurrentRole(li),
+      }];
+    }).flat().filter(r => r.title);
+  }
+
+  function extractEducation() {
+    const items = querySectionItems('education');
+    return items.map(li => {
+      const bolds = [...li.querySelectorAll('.t-bold span[aria-hidden="true"]')]
+        .map(s => (s.innerText || '').trim()).filter(Boolean);
+      return {
+        school: bolds[0] || null,
+        degree: qTextFirst(li, '.t-14.t-normal:not(.t-black--light) span[aria-hidden="true"]'),
+        dates:  qTextFirst(li, '.pvs-entity__caption-wrapper span[aria-hidden="true"]') ||
+                qTextFirst(li, '.t-14.t-normal.t-black--light span[aria-hidden="true"]'),
+      };
+    }).filter(e => e.school);
+  }
+
+  function extractSkills() {
+    const items = querySectionItems('skills');
+    return items
+      .map(li => qTextFirst(li, '.t-bold span[aria-hidden="true"]'))
+      .filter(Boolean)
+      .slice(0, 30); // cap at 30 skills
+  }
+
+  // Find the content list for a named profile section (experience/education/skills).
+  // Returns array of <li> elements.
+  function querySectionItems(sectionName) {
+    // Strategy 1: anchor id (most reliable)
+    const anchor = document.querySelector(`div#${sectionName}, section#${sectionName}`);
+    if (anchor) {
+      // Walk next siblings to find the ul
+      let el = anchor.nextElementSibling;
+      for (let i = 0; i < 8 && el; i++) {
+        const lis = el.querySelectorAll('li.artdeco-list__item, li[class*="pvs-list__item"]');
+        if (lis.length) return [...lis];
+        el = el.nextElementSibling;
+      }
+    }
+
+    // Strategy 2: data-view-name attribute
+    const byViewName = document.querySelector(`[data-view-name*="${sectionName}"]`);
+    if (byViewName) {
+      const lis = byViewName.querySelectorAll('li.artdeco-list__item, li[class*="pvs-list__item"]');
+      if (lis.length) return [...lis];
+    }
+
+    // Strategy 3: find section by h2 text match
+    for (const h2 of document.querySelectorAll('h2')) {
+      if ((h2.innerText || '').trim().toLowerCase().includes(sectionName)) {
+        const section = h2.closest('section') || h2.parentElement?.parentElement;
+        if (section) {
+          const lis = section.querySelectorAll('li.artdeco-list__item, li[class*="pvs-list__item"]');
+          if (lis.length) return [...lis];
+        }
+      }
+    }
+
+    return [];
+  }
+
+  function isCurrentRole(el) {
+    const dateText = (
+      qTextFirst(el, '.pvs-entity__caption-wrapper span[aria-hidden="true"]') ||
+      qTextFirst(el, '.t-14.t-normal.t-black--light span[aria-hidden="true"]') || ''
+    ).toLowerCase();
+    return dateText.includes('present') || dateText.includes('current');
+  }
+
+  function qTextFirst(root, selector) {
+    return (root.querySelector(selector)?.innerText || '').trim() || null;
   }
 
   function extractCurrentCompany() {
