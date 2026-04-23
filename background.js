@@ -186,15 +186,20 @@ async function parseSSEStream(bodyStream) {
 // ── Profile Capture (from content_script) ────────────────────────────────────
 
 async function handleProfileCapture(profileData, tabId) {
-  if (!(await isAuthenticated())) return null;
-
+  // Don't short-circuit on the cookie presence check — its cookie-name heuristic
+  // can be wrong, and a silent null here previously masked failures as "saved".
+  // Let the backend decide; surface non-2xx clearly.
   const response = await authedFetch(`/api/extension/profile`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(profileData),
   });
 
-  if (!response.ok) throw new Error(`Profile capture failed: ${response.status}`);
+  if (response.status === 401) throw new Error('Not signed in to Nexo');
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(`Profile capture failed: ${response.status} ${text.slice(0, 200)}`);
+  }
   return response.json();
 }
 
