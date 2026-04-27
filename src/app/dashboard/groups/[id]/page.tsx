@@ -5,8 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Copy, Check, Crown, Users, Search, BarChart2,
-  Linkedin, Globe, UserCheck, AlertCircle
+  Linkedin, Globe, UserCheck, AlertCircle, ShieldCheck, Plus, Trash2, UserPlus
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { groupsService } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -234,6 +236,166 @@ export default function GroupDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Membership rules + join requests (admin) */}
+        {myRole === 'admin' && (
+          <>
+            <MembershipRules groupId={id} />
+            <JoinRequestsSection groupId={id} />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MembershipRules({ groupId }: { groupId: string }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const { data, isLoading } = useQuery({
+    queryKey: ['group-rules', groupId],
+    queryFn: () => groupsService.getRules(groupId),
+    enabled: !!groupId,
+  });
+  const rules = data?.rules || [];
+  const [pattern, setPattern] = useState('');
+  const [autoApprove, setAutoApprove] = useState(true);
+  const [adding, setAdding] = useState(false);
+
+  const onAdd = async () => {
+    const p = pattern.trim().toLowerCase();
+    if (!p) return;
+    setAdding(true);
+    try {
+      const res = await groupsService.addRule(groupId, { rule_type: 'email_domain', pattern: p, auto_approve: autoApprove });
+      if (!res.success) {
+        toast({ title: 'Failed', description: res.error, variant: 'destructive' });
+        return;
+      }
+      setPattern('');
+      qc.invalidateQueries({ queryKey: ['group-rules', groupId] });
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const onDelete = async (ruleId: string) => {
+    await groupsService.deleteRule(groupId, ruleId);
+    qc.invalidateQueries({ queryKey: ['group-rules', groupId] });
+  };
+
+  return (
+    <div>
+      <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+        <ShieldCheck className="w-4 h-4" />
+        Membership rules
+      </h2>
+      <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+        <p className="text-xs text-muted-foreground">
+          Anyone whose email matches a rule can join via the discovery page. Rules with auto-approve OFF queue requests for your review.
+        </p>
+
+        <div className="flex gap-2">
+          <Input
+            value={pattern}
+            onChange={(e) => setPattern(e.target.value)}
+            placeholder="email domain, e.g. mastersunion.in"
+            onKeyDown={(e) => e.key === 'Enter' && onAdd()}
+          />
+          <div className="flex items-center gap-2 px-2 shrink-0">
+            <Switch checked={autoApprove} onCheckedChange={setAutoApprove} id="auto-approve" />
+            <label htmlFor="auto-approve" className="text-xs">Auto-approve</label>
+          </div>
+          <Button size="sm" onClick={onAdd} disabled={adding || !pattern.trim()} className="gap-1 shrink-0">
+            <Plus className="w-3.5 h-3.5" />
+            Add
+          </Button>
+        </div>
+
+        {isLoading ? (
+          <div className="h-6 rounded bg-muted animate-pulse" />
+        ) : rules.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-2">No rules yet — community is invite-link only.</p>
+        ) : (
+          <div className="space-y-1">
+            {rules.map((r: any) => (
+              <div key={r.id} className="flex items-center gap-2 py-1.5">
+                <Badge variant="outline" className="font-mono text-xs">{r.rule_type}</Badge>
+                <span className="text-sm font-medium">{r.pattern}</span>
+                <Badge
+                  variant={r.auto_approve ? 'default' : 'outline'}
+                  className={cn('text-[10px] h-5', r.auto_approve ? '' : 'text-amber-700 border-amber-300')}
+                >
+                  {r.auto_approve ? 'auto-approve' : 'manual review'}
+                </Badge>
+                <button
+                  onClick={() => onDelete(r.id)}
+                  className="ml-auto text-muted-foreground hover:text-destructive p-1"
+                  title="Remove rule"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function JoinRequestsSection({ groupId }: { groupId: string }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const { data, isLoading } = useQuery({
+    queryKey: ['group-join-requests', groupId],
+    queryFn: () => groupsService.getJoinRequests(groupId),
+    enabled: !!groupId,
+  });
+  const reqs = data?.requests || [];
+
+  const onApprove = async (reqId: string) => {
+    const r = await groupsService.approveJoinRequest(groupId, reqId);
+    if (r.success) {
+      toast({ title: 'Member added' });
+      qc.invalidateQueries({ queryKey: ['group-join-requests', groupId] });
+      qc.invalidateQueries({ queryKey: ['group-members', groupId] });
+    }
+  };
+
+  const onReject = async (reqId: string) => {
+    await groupsService.rejectJoinRequest(groupId, reqId);
+    qc.invalidateQueries({ queryKey: ['group-join-requests', groupId] });
+  };
+
+  if (!isLoading && reqs.length === 0) return null;
+
+  return (
+    <div>
+      <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+        <UserPlus className="w-4 h-4" />
+        Pending join requests ({reqs.length})
+      </h2>
+      <div className="rounded-xl border border-border bg-card px-4">
+        {reqs.map((r: any) => (
+          <div key={r.id} className="flex items-center gap-3 py-3 border-b border-border last:border-0">
+            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+              {r.profile_picture ? (
+                <img src={r.profile_picture} alt={r.user_full_name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {r.user_full_name?.charAt(0)?.toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{r.user_full_name}</p>
+              <p className="text-xs text-muted-foreground truncate">{r.user_email}</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => onReject(r.id)}>Reject</Button>
+            <Button size="sm" onClick={() => onApprove(r.id)}>Approve</Button>
+          </div>
+        ))}
       </div>
     </div>
   );

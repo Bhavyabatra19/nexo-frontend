@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Users, Bell, Upload, Settings, LogOut, ChevronDown, ChevronRight, ChevronLeft, Plus, List as ListIcon, Pencil, Sparkles, Tag, GitMerge, Linkedin, Search, ArrowRight } from 'lucide-react';
+import { Users, Bell, Upload, Settings, LogOut, ChevronDown, ChevronRight, ChevronLeft, Plus, List as ListIcon, Pencil, Sparkles, Tag, GitMerge, Linkedin, Search, ArrowRight, ShieldCheck, Compass } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { authService, organizeService } from '@/services/api';
 import { useState, useEffect, useCallback } from 'react';
@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 const navItems = [
   { id: 'search', label: 'Search', icon: Search, href: '/dashboard/search' },
   { id: 'groups', label: 'Communities', icon: Users, href: '/dashboard/groups' },
+  { id: 'discover', label: 'Discover', icon: Compass, href: '/dashboard/groups/discover' },
   { id: 'intros', label: 'Introductions', icon: ArrowRight, href: '/dashboard/intros' },
   { id: 'nexo-ai', label: 'Nexo AI', icon: Sparkles, href: '/dashboard/nexo-ai' },
   { id: 'reminders', label: 'Reminders', icon: Bell, href: '/dashboard/reminders' },
@@ -19,6 +20,8 @@ const navItems = [
   { id: 'import', label: 'Import', icon: Upload, href: '/dashboard/import' },
   { id: 'settings', label: 'Settings', icon: Settings, href: '/dashboard/settings' },
 ];
+
+const adminNavItem = { id: 'admin-kyc', label: 'KYC Review', icon: ShieldCheck, href: '/dashboard/admin/kyc' };
 
 const AppSidebar = () => {
   const pathname = usePathname();
@@ -323,7 +326,10 @@ const AppSidebar = () => {
           </div>
         )}
 
-        {navItems.map((item) => {
+        {[
+          ...navItems,
+          ...(userData?.user?.isPlatformAdmin ? [adminNavItem] : []),
+        ].map((item) => {
           const badge = getNavBadge(item.id);
           return (
             <Link

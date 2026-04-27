@@ -533,9 +533,96 @@ class GroupsService {
         return fetchWithAuth(`${API_BASE}/groups/${groupId}/members/${memberId}`, { method: 'DELETE' });
     }
 
+    async listDiscoverable() {
+        return fetchWithAuth(`${API_BASE}/groups/discoverable`);
+    }
+
+    async requestJoin(groupId: string, message?: string) {
+        return fetchWithAuth(`${API_BASE}/groups/${groupId}/join`, {
+            method: 'POST',
+            body: JSON.stringify({ message }),
+        });
+    }
+
+    async getRules(groupId: string) {
+        return fetchWithAuth(`${API_BASE}/groups/${groupId}/rules`);
+    }
+
+    async addRule(groupId: string, rule: { rule_type?: string; pattern: string; auto_approve?: boolean }) {
+        return fetchWithAuth(`${API_BASE}/groups/${groupId}/rules`, {
+            method: 'POST',
+            body: JSON.stringify(rule),
+        });
+    }
+
+    async deleteRule(groupId: string, ruleId: string) {
+        return fetchWithAuth(`${API_BASE}/groups/${groupId}/rules/${ruleId}`, { method: 'DELETE' });
+    }
+
+    async getJoinRequests(groupId: string) {
+        return fetchWithAuth(`${API_BASE}/groups/${groupId}/join-requests`);
+    }
+
+    async approveJoinRequest(groupId: string, reqId: string) {
+        return fetchWithAuth(`${API_BASE}/groups/${groupId}/join-requests/${reqId}/approve`, { method: 'POST' });
+    }
+
+    async rejectJoinRequest(groupId: string, reqId: string) {
+        return fetchWithAuth(`${API_BASE}/groups/${groupId}/join-requests/${reqId}/reject`, { method: 'POST' });
+    }
 }
 
 export const groupsService = new GroupsService();
+
+// ─── Community Service (KYC) ───────────────────────────────────────────────
+
+class CommunityService {
+    async submitKyc(payload: {
+        full_legal_name: string;
+        org_name: string;
+        org_email: string;
+        org_role?: string;
+        id_document_url?: string;
+        proof_of_org_url?: string;
+        notes?: string;
+    }) {
+        return fetchWithAuth(`${API_BASE}/community/kyc`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+    }
+
+    async getMyKyc() {
+        return fetchWithAuth(`${API_BASE}/community/kyc/me`);
+    }
+}
+
+export const communityService = new CommunityService();
+
+// ─── Admin Service (platform admin only) ───────────────────────────────────
+
+class AdminService {
+    async listPendingKyc() {
+        return fetchWithAuth(`${API_BASE}/admin/kyc/pending`);
+    }
+
+    async getKyc(id: string) {
+        return fetchWithAuth(`${API_BASE}/admin/kyc/${id}`);
+    }
+
+    async approveKyc(id: string) {
+        return fetchWithAuth(`${API_BASE}/admin/kyc/${id}/approve`, { method: 'POST' });
+    }
+
+    async rejectKyc(id: string, reason: string) {
+        return fetchWithAuth(`${API_BASE}/admin/kyc/${id}/reject`, {
+            method: 'POST',
+            body: JSON.stringify({ reason }),
+        });
+    }
+}
+
+export const adminService = new AdminService();
 
 // ─── Search Service ────────────────────────────────────────────────────────
 
