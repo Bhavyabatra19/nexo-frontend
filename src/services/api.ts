@@ -588,12 +588,11 @@ class GroupsService {
     }> {
         const fd = new FormData();
         fd.append('file', file);
-        const headers: Record<string, string> = { ...authService.getAuthHeaders() };
-        // Don't set Content-Type — the browser must set the multipart boundary.
+        // No headers — auth rides on the httpOnly cookie, and the browser
+        // must set Content-Type itself so it can include the multipart boundary.
         const res = await fetch(`${API_BASE}/groups/${groupId}/contacts/csv/preview`, {
             method: 'POST',
             credentials: 'include',
-            headers,
             body: fd,
         });
         if (res.status === 401) { await authService.refreshAccessToken(); return this.previewContactsCsv(groupId, file); }
