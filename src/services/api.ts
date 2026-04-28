@@ -621,6 +621,54 @@ class GroupsService {
             body: JSON.stringify(payload),
         });
     }
+
+    async listImportedContacts(groupId: string): Promise<{
+        success: boolean;
+        contacts: ImportedContact[];
+        stats: { total: number; with_linkedin: number; enriched: number; in_progress: number; failed: number };
+        error?: string;
+    }> {
+        return fetchWithAuth(`${API_BASE}/groups/${groupId}/contacts/imported`);
+    }
+
+    async enrichImportedContacts(groupId: string, payload: { contact_ids?: string[]; all?: boolean }): Promise<{
+        success: boolean;
+        queued_count: number;
+        truncated?: boolean;
+        job_id?: string;
+        message?: string;
+        error?: string;
+    }> {
+        return fetchWithAuth(`${API_BASE}/groups/${groupId}/contacts/enrich`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+    }
+}
+
+export interface ImportedContact {
+    id: string;
+    full_name: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    linkedin_url: string | null;
+    company: string | null;
+    job_title: string | null;
+    photo_url: string | null;
+    bio: string | null;
+    enrichment_status: 'pending' | 'queued' | 'enriching' | 'enriched' | 'failed' | 'skipped' | null;
+    enriched_at: string | null;
+    enrichment_provider: string | null;
+    connections_count: number | null;
+    followers_count: number | null;
+    last_post: { text?: string; url?: string; posted_at?: string; likes?: number; comments?: number } | null;
+    last_post_at: string | null;
+    experience: any[] | null;
+    education: any[] | null;
+    created_at: string;
+    updated_at: string;
 }
 
 export const groupsService = new GroupsService();

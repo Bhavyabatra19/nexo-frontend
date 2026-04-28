@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import ContactsCsvUploadCard from '@/components/ContactsCsvUploadCard';
+import CommunityImportedContactsCard from '@/components/CommunityImportedContactsCard';
 
 function StatCard({ label, value, icon: Icon }: { label: string; value: any; icon: any }) {
   return (
@@ -244,6 +245,7 @@ export default function GroupDetailPage() {
             <MembershipRules groupId={id} />
             <JoinRequestsSection groupId={id} />
             <ContactsCsvUploadCard groupId={id} />
+            <CommunityImportedContactsCard groupId={id} />
           </>
         )}
       </div>
