@@ -570,6 +570,58 @@ class GroupsService {
     async rejectJoinRequest(groupId: string, reqId: string) {
         return fetchWithAuth(`${API_BASE}/groups/${groupId}/join-requests/${reqId}/reject`, { method: 'POST' });
     }
+
+    // CSV upload — preview parses the file server-side and returns the parsed
+    // grid + a suggested column → contact-field mapping. Import is stateless:
+    // the client passes back the rows + user-confirmed mapping in JSON.
+    async previewContactsCsv(groupId: string, file: File): Promise<{
+        success: boolean;
+        columns: string[];
+        sample_rows: Record<string, string>[];
+        rows: Record<string, string>[];
+        total_rows: number;
+        truncated: boolean;
+        suggested_mapping: Record<string, string | null>;
+        canonical_fields: string[];
+        max_rows: number;
+        error?: string;
+    }> {
+        const fd = new FormData();
+        fd.append('file', file);
+        const headers: Record<string, string> = { ...authService.getAuthHeaders() };
+        // Don't set Content-Type — the browser must set the multipart boundary.
+        const res = await fetch(`${API_BASE}/groups/${groupId}/contacts/csv/preview`, {
+            method: 'POST',
+            credentials: 'include',
+            headers,
+            body: fd,
+        });
+        if (res.status === 401) { await authService.refreshAccessToken(); return this.previewContactsCsv(groupId, file); }
+        return res.json();
+    }
+
+    async importContactsCsv(groupId: string, payload: {
+        rows: Record<string, string>[];
+        mapping: Record<string, string | null>;
+        dry_run?: boolean;
+    }): Promise<{
+        success: boolean;
+        dry_run: boolean;
+        total: number;
+        valid: number;
+        inserted: number;
+        updated: number;
+        skipped_duplicates: number;
+        skipped_invalid: number;
+        errors: { row: number; reason: string }[];
+        error?: string;
+    }> {
+        return fetchWithAuth(`${API_BASE}/groups/${groupId}/contacts/csv/import`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+    }
 }
 
 export const groupsService = new GroupsService();

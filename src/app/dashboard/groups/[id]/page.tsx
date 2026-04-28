@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import ContactsCsvUploadCard from '@/components/ContactsCsvUploadCard';
 
 function StatCard({ label, value, icon: Icon }: { label: string; value: any; icon: any }) {
   return (
@@ -237,11 +238,12 @@ export default function GroupDetailPage() {
           </div>
         </div>
 
-        {/* Membership rules + join requests (admin) */}
+        {/* Membership rules + join requests + contact upload (admin) */}
         {myRole === 'admin' && (
           <>
             <MembershipRules groupId={id} />
             <JoinRequestsSection groupId={id} />
+            <ContactsCsvUploadCard groupId={id} />
           </>
         )}
       </div>
