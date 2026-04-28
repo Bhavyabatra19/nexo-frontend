@@ -669,3 +669,80 @@ class IntrosService {
 }
 
 export const introsService = new IntrosService();
+
+// ─── Scan Service ──────────────────────────────────────────────────────────
+// Chat-based network-of-network scan (Sprint 1 P0).
+// submit() returns immediately with a scan_id; the UI polls get(id) until
+// status === 'completed' (or 'failed'), then calls results(id).
+
+export interface ScanResult {
+    contact_id: string;
+    full_name: string;
+    job_title?: string | null;
+    company?: string | null;
+    photo_url?: string | null;
+    linkedin_url?: string | null;
+    address?: string | null;
+    bio?: string | null;
+    skills?: string[] | null;
+    last_contacted?: string | null;
+    connection_tier?: string | null;
+    confidence_score?: number | null;
+    vector_score?: number;
+    score?: number;
+    score_breakdown?: Record<string, number>;
+    degree: 1 | 2;
+    bridge?: {
+        owner_id: string;
+        owner_name: string;
+        owner_photo?: string | null;
+        confidence_score?: number | null;
+        connection_tier?: string | null;
+    } | null;
+}
+
+export interface ScanRecord {
+    id: string;
+    query: string;
+    status: 'queued' | 'running' | 'completed' | 'failed';
+    parsed?: Record<string, any>;
+    scope?: Record<string, any>;
+    result_count?: number;
+    error?: string | null;
+    created_at: string;
+    started_at?: string | null;
+    completed_at?: string | null;
+    duration_ms?: number | null;
+}
+
+class ScanService {
+    async submit(query: string): Promise<{ success: boolean; scan_id: string; status: string }> {
+        return fetchWithAuth(`${API_BASE}/scan/query`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query }),
+        });
+    }
+
+    async get(scanId: string): Promise<{ success: boolean; scan: ScanRecord }> {
+        return fetchWithAuth(`${API_BASE}/scan/${scanId}`);
+    }
+
+    async results(scanId: string): Promise<{
+        success: boolean;
+        scan_id: string;
+        status: ScanRecord['status'];
+        parsed: Record<string, any>;
+        results: ScanResult[];
+        result_count: number;
+        duration_ms: number;
+    }> {
+        return fetchWithAuth(`${API_BASE}/scan/${scanId}/results`);
+    }
+
+    async list(limit = 20): Promise<{ success: boolean; scans: ScanRecord[] }> {
+        return fetchWithAuth(`${API_BASE}/scan?limit=${limit}`);
+    }
+}
+
+export const scanService = new ScanService();

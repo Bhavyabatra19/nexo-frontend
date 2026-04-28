@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Users, Bell, Upload, Settings, LogOut, ChevronDown, ChevronRight, ChevronLeft, Plus, List as ListIcon, Pencil, Sparkles, Tag, GitMerge, Linkedin, Search, ArrowRight, ShieldCheck, Compass } from 'lucide-react';
+import { Users, Bell, Upload, Settings, LogOut, ChevronDown, ChevronRight, ChevronLeft, Plus, List as ListIcon, Pencil, Sparkles, Tag, GitMerge, Linkedin, Search, ArrowRight, ShieldCheck, Compass, Network } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { authService, organizeService } from '@/services/api';
 import { useState, useEffect, useCallback } from 'react';
@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const navItems = [
   { id: 'search', label: 'Search', icon: Search, href: '/dashboard/search' },
+  { id: 'scan', label: 'Network Scan', icon: Network, href: '/dashboard/scan' },
   { id: 'groups', label: 'Communities', icon: Users, href: '/dashboard/groups' },
   { id: 'discover', label: 'Discover', icon: Compass, href: '/dashboard/groups/discover' },
   { id: 'intros', label: 'Introductions', icon: ArrowRight, href: '/dashboard/intros' },
