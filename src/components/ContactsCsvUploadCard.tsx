@@ -1,19 +1,19 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, X, RefreshCw } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, X, RefreshCw, Download } from "lucide-react";
 import { groupsService } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
 const FIELD_LABELS: Record<string, string> = {
-  full_name:    "Full name",
+  full_name:    "Full name *",
   first_name:   "First name",
   last_name:    "Last name",
   email:        "Email",
   phone:        "Phone",
-  linkedin_url: "LinkedIn URL",
+  linkedin_url: "LinkedIn URL *",
   company:      "Company",
   job_title:    "Job title",
 };
@@ -47,12 +47,9 @@ type Stage =
     }
   | { kind: "error"; message: string };
 
-function hasIdentifier(m: Mapping): boolean {
-  if (m.full_name) return true;
-  if (m.first_name && m.last_name) return true;
-  if (m.email) return true;
-  if (m.linkedin_url) return true;
-  return false;
+function hasRequired(m: Mapping): boolean {
+  const hasName = !!m.full_name || (!!m.first_name && !!m.last_name);
+  return hasName && !!m.linkedin_url;
 }
 
 export default function ContactsCsvUploadCard({ groupId }: { groupId: string }) {
@@ -108,10 +105,10 @@ export default function ContactsCsvUploadCard({ groupId }: { groupId: string }) 
 
   async function doImport() {
     if (stage.kind !== "preview-ready") return;
-    if (!hasIdentifier(stage.mapping)) {
+    if (!hasRequired(stage.mapping)) {
       toast({
-        title: "Map at least one identifier",
-        description: "Pick a column for Full name, Email, or LinkedIn URL before importing.",
+        title: "Name and LinkedIn URL are required",
+        description: "Map a Full name (or First + Last name) and a LinkedIn URL column before importing.",
         variant: "destructive",
       });
       return;
@@ -150,7 +147,7 @@ export default function ContactsCsvUploadCard({ groupId }: { groupId: string }) 
       </h2>
       <div className="rounded-xl border border-border bg-card p-4 space-y-4">
         <p className="text-xs text-muted-foreground">
-          Bulk-import contacts you want associated with this community. We'll preview the file, suggest column mappings, and dedupe against your existing contacts before importing.
+          Bulk-import contacts you want associated with this community. Each row needs a <span className="font-medium text-foreground">name</span> and a <span className="font-medium text-foreground">LinkedIn URL</span> — we use the URL to enrich the contact and dedupe against your existing list.
         </p>
 
         {stage.kind === "idle" && (
@@ -162,10 +159,20 @@ export default function ContactsCsvUploadCard({ groupId }: { groupId: string }) 
               onChange={onFile}
               className="hidden"
             />
-            <Button onClick={() => fileRef.current?.click()} size="sm" className="gap-2">
-              <Upload className="w-3.5 h-3.5" />
-              Choose CSV file
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button onClick={() => fileRef.current?.click()} size="sm" className="gap-2">
+                <Upload className="w-3.5 h-3.5" />
+                Choose CSV file
+              </Button>
+              <a
+                href="/nexo-contacts-template.csv"
+                download="nexo-contacts-template.csv"
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download template
+              </a>
+            </div>
           </>
         )}
 
@@ -197,7 +204,7 @@ export default function ContactsCsvUploadCard({ groupId }: { groupId: string }) 
             <div>
               <p className="text-xs font-semibold text-foreground mb-2">Map columns</p>
               <p className="text-xs text-muted-foreground mb-3">
-                We've guessed where each column goes. Adjust below if anything's off. At minimum, map a Full name (or Email or LinkedIn URL).
+                We've guessed where each column goes. Adjust below if anything's off. <span className="text-foreground font-medium">Required:</span> a name (Full name, or First + Last) and LinkedIn URL.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {FIELD_ORDER.map((field) => (
@@ -247,7 +254,7 @@ export default function ContactsCsvUploadCard({ groupId }: { groupId: string }) 
             </div>
 
             <div className="flex items-center gap-2 pt-1">
-              <Button onClick={doImport} disabled={!hasIdentifier(stage.mapping)} size="sm" className="gap-2">
+              <Button onClick={doImport} disabled={!hasRequired(stage.mapping)} size="sm" className="gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Import {stage.totalRows} rows
               </Button>
