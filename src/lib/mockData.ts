@@ -24,9 +24,32 @@ export interface Contact {
   instagram_url?: string;
   customLinks?: { label: string; url: string }[];
   custom_links?: { label: string; url: string }[];
-  experience?: { title?: string | null; company?: string | null; dates?: string | null; current?: boolean }[];
-  education?: { school?: string | null; degree?: string | null; dates?: string | null }[];
+  experience?: {
+    title?: string | null;
+    company?: string | null;
+    start?: string | null;
+    end?: string | null;
+    dates?: string | null;
+    current?: boolean;
+    description?: string | null;
+    location?: string | null;
+  }[];
+  education?: {
+    school?: string | null;
+    degree?: string | null;
+    field?: string | null;
+    start?: string | null;
+    end?: string | null;
+    dates?: string | null;
+  }[];
   skills?: string[];
+  last_post?: { text?: string; url?: string; posted_at?: string; likes?: number; comments?: number } | null;
+  last_post_at?: string | null;
+  connections_count?: number | null;
+  followers_count?: number | null;
+  location?: string | null;
+  enrichment_status?: 'pending' | 'queued' | 'enriching' | 'enriched' | 'failed' | null;
+  enriched_at?: string | null;
 }
 
 export interface NoteEntry {

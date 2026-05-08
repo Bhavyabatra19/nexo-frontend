@@ -1,4 +1,4 @@
-import { X, Mail, Phone, Building2, Briefcase, Calendar, MessageSquare, Tag, Send, Bell, Edit2, Trash2, CheckCircle, Circle, Clock, Plus, UserPlus, RefreshCw, Loader2, Gift, Heart, Cake, Repeat, MapPin, FileText, Sparkles, ChevronDown } from 'lucide-react';
+import { X, Mail, Phone, Building2, Briefcase, Calendar, MessageSquare, Tag, Send, Bell, Edit2, Trash2, CheckCircle, Circle, Clock, Plus, UserPlus, RefreshCw, Loader2, Gift, Heart, Cake, Repeat, MapPin, FileText, Sparkles, ChevronDown, GraduationCap, Users, Newspaper, ExternalLink, ThumbsUp } from 'lucide-react';
 import { format, formatDistanceToNow, isPast, isToday } from 'date-fns';
 import { type Contact, type ActivityEvent, type ActivityType, tagColors, allTags } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,36 @@ interface ContactDetailProps {
   onUpdate: (contact: Contact) => void;
   onDelete?: (contactId: string) => void;
   listId?: string;
+}
+
+function formatCount(n: number | null | undefined): string {
+  if (n == null) return '';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1) + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(n >= 10_000 ? 0 : 1) + 'K';
+  return String(n);
+}
+
+// Bright Data returns dates as "2024-06", "2020-04-01", "2018", or "Present".
+// Render them as "Jun 2024", "Apr 2020", "2018", "Present".
+function formatDatePart(s: string | null | undefined): string {
+  if (!s) return '';
+  const v = String(s).trim();
+  if (!v || v.toLowerCase() === 'present') return v;
+  const m = v.match(/^(\d{4})(?:-(\d{1,2}))?(?:-(\d{1,2}))?$/);
+  if (!m) return v;
+  const year = m[1];
+  const month = m[2];
+  if (!month) return year;
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const idx = parseInt(month, 10) - 1;
+  return monthNames[idx] ? `${monthNames[idx]} ${year}` : year;
+}
+
+function formatDateRange(start: string | null | undefined, end: string | null | undefined, current: boolean | undefined): string {
+  const s = formatDatePart(start);
+  const e = current ? 'Present' : formatDatePart(end);
+  if (s && e) return `${s} – ${e}`;
+  return s || e || '';
 }
 
 const sourceLabels: Record<string, string> = {
@@ -1075,26 +1105,81 @@ const ContactDetail = ({ contact, onClose, onUpdate, onDelete, listId }: Contact
               )}
             </div>
 
-            {/* Experience (from LinkedIn extension / Bright Data) */}
+            {/* Network metrics strip */}
+            {(contact.connections_count != null || contact.followers_count != null || contact.location) && (
+              <div className="glass-card p-4 rounded-xl flex items-center gap-5 text-xs">
+                {contact.connections_count != null && (
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <div className="font-semibold text-foreground">{formatCount(contact.connections_count)}</div>
+                      <div className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Connections</div>
+                    </div>
+                  </div>
+                )}
+                {contact.followers_count != null && (
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <div className="font-semibold text-foreground">{formatCount(contact.followers_count)}</div>
+                      <div className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Followers</div>
+                    </div>
+                  </div>
+                )}
+                {contact.location && (
+                  <div className="flex items-center gap-2 ml-auto text-muted-foreground">
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span className="truncate">{contact.location}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Awaiting-enrichment placeholder */}
+            {(contact.enrichment_status === 'queued' || contact.enrichment_status === 'enriching') &&
+              !(contact.experience && contact.experience.length) &&
+              !(contact.education && contact.education.length) && (
+              <div className="glass-card p-4 rounded-xl flex items-center gap-3 text-xs text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                <span>Enriching from LinkedIn — work history, education, and bio will appear shortly.</span>
+              </div>
+            )}
+
+            {/* Experience */}
             {contact.experience && contact.experience.length > 0 && (
               <div className="space-y-3 glass-card p-4 rounded-xl">
-                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Experience</h3>
-                <div className="space-y-3">
-                  {contact.experience.map((role, idx) => (
-                    <div key={idx} className="flex gap-3 text-xs">
-                      <Briefcase className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-foreground truncate">
-                          {role.title || 'Role'}
-                          {role.current && (
-                            <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-primary/10 text-primary">CURRENT</span>
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Briefcase className="w-3 h-3" /> Experience
+                </h3>
+                <div className="space-y-4">
+                  {contact.experience.map((role, idx) => {
+                    const dates = role.dates || formatDateRange(role.start, role.end, role.current);
+                    return (
+                      <div key={idx} className="flex gap-3 text-xs">
+                        <div className="w-1 shrink-0 rounded-full bg-border mt-1" />
+                        <div className="flex-1 min-w-0 space-y-0.5">
+                          <div className="font-semibold text-foreground flex flex-wrap items-center gap-1.5">
+                            <span>{role.title || 'Role'}</span>
+                            {role.current && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-primary/10 text-primary">CURRENT</span>
+                            )}
+                          </div>
+                          {role.company && (
+                            <div className="text-foreground/80 truncate">{role.company}</div>
+                          )}
+                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground/80">
+                            {dates && <span>{dates}</span>}
+                            {role.location && <span className="flex items-center gap-1"><MapPin className="w-2.5 h-2.5" />{role.location}</span>}
+                          </div>
+                          {role.description && (
+                            <p className="text-[11px] text-muted-foreground/90 leading-relaxed mt-1 whitespace-pre-wrap line-clamp-4">
+                              {role.description}
+                            </p>
                           )}
                         </div>
-                        {role.company && <div className="text-muted-foreground truncate">{role.company}</div>}
-                        {role.dates && <div className="text-[10px] text-muted-foreground/70 mt-0.5">{role.dates}</div>}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1102,18 +1187,24 @@ const ContactDetail = ({ contact, onClose, onUpdate, onDelete, listId }: Contact
             {/* Education */}
             {contact.education && contact.education.length > 0 && (
               <div className="space-y-3 glass-card p-4 rounded-xl">
-                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Education</h3>
-                <div className="space-y-3">
-                  {contact.education.map((edu, idx) => (
-                    <div key={idx} className="flex gap-3 text-xs">
-                      <Building2 className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-foreground truncate">{edu.school || 'School'}</div>
-                        {edu.degree && <div className="text-muted-foreground truncate">{edu.degree}</div>}
-                        {edu.dates && <div className="text-[10px] text-muted-foreground/70 mt-0.5">{edu.dates}</div>}
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <GraduationCap className="w-3 h-3" /> Education
+                </h3>
+                <div className="space-y-4">
+                  {contact.education.map((edu, idx) => {
+                    const dates = edu.dates || formatDateRange(edu.start, edu.end, false);
+                    const detail = [edu.degree, edu.field].filter(Boolean).join(' · ');
+                    return (
+                      <div key={idx} className="flex gap-3 text-xs">
+                        <div className="w-1 shrink-0 rounded-full bg-border mt-1" />
+                        <div className="flex-1 min-w-0 space-y-0.5">
+                          <div className="font-semibold text-foreground">{edu.school || 'School'}</div>
+                          {detail && <div className="text-foreground/80">{detail}</div>}
+                          {dates && <div className="text-[10px] text-muted-foreground/80">{dates}</div>}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1128,6 +1219,38 @@ const ContactDetail = ({ contact, onClose, onUpdate, onDelete, listId }: Contact
                       {skill}
                     </span>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Latest LinkedIn post */}
+            {contact.last_post && (contact.last_post.text || contact.last_post.url) && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Newspaper className="w-3 h-3" /> Latest post
+                  {contact.last_post.posted_at && (
+                    <span className="ml-auto font-normal text-muted-foreground/70 normal-case tracking-normal">
+                      {(() => { try { return formatDistanceToNow(new Date(contact.last_post.posted_at), { addSuffix: true }); } catch { return ''; } })()}
+                    </span>
+                  )}
+                </h3>
+                {contact.last_post.text && (
+                  <p className="text-[11px] text-foreground/90 leading-relaxed whitespace-pre-wrap line-clamp-5">
+                    {contact.last_post.text}
+                  </p>
+                )}
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground/80">
+                  {contact.last_post.likes != null && (
+                    <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" />{contact.last_post.likes}</span>
+                  )}
+                  {contact.last_post.comments != null && (
+                    <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{contact.last_post.comments}</span>
+                  )}
+                  {contact.last_post.url && (
+                    <a href={contact.last_post.url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 text-primary hover:underline">
+                      View on LinkedIn <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
               </div>
             )}

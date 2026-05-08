@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Plus, Tag, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, X, Loader2, Filter, Globe, Linkedin, UserPlus, List, History, CheckCircle2, XCircle, GitMerge } from 'lucide-react';
+import { Search, Plus, Tag, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, X, Loader2, Filter, Globe, Linkedin, UserPlus, List, History, CheckCircle2, XCircle, GitMerge, Sparkles } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { mockReminders, tagColors, allTags, type Contact, type Reminder } from '@/lib/mockData';
 import ContactDetail from './ContactDetail';
@@ -97,8 +97,22 @@ const ContactGrid = () => {
         ai_summary: c.ai_summary || null,
         lists: [],
         activities: [],
+        enrichment_status: c.enrichment_status || null,
+        enriched_at: c.enriched_at || null,
+        experience: Array.isArray(c.experience) ? c.experience : [],
+        education: Array.isArray(c.education) ? c.education : [],
+        skills: Array.isArray(c.skills) ? c.skills : [],
+        last_post: c.last_post || null,
+        last_post_at: c.last_post_at || null,
+        connections_count: c.connections_count ?? null,
+        followers_count: c.followers_count ?? null,
+        location: c.location || c.city || c.country || null,
       })) as Contact[];
       return { contacts: mapped, total: response.pagination?.total ?? mapped.length };
+    },
+    refetchInterval: (query) => {
+      const list = (query.state.data as { contacts?: Contact[] } | undefined)?.contacts || [];
+      return list.some((c) => c.enrichment_status === 'queued' || c.enrichment_status === 'enriching') ? 8000 : false;
     },
   });
 
@@ -233,6 +247,30 @@ const ContactGrid = () => {
   const handleContactUpdate = (updated: Contact) => {
     setContacts((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
     setSelectedContact(updated);
+  };
+
+  const [enrichingIds, setEnrichingIds] = useState<Set<string>>(new Set());
+  const enrichOne = async (contact: Contact, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!contact.linkedinUrl) {
+      toast({ variant: 'destructive', title: 'No LinkedIn URL', description: 'Add a LinkedIn URL before enriching.' });
+      return;
+    }
+    setEnrichingIds((prev) => new Set(prev).add(contact.id));
+    setContacts((prev) => prev.map((c) => (c.id === contact.id ? { ...c, enrichment_status: 'queued' } : c)));
+    try {
+      const res = await contactsService.enrichContact(contact.id);
+      if (!res?.success) {
+        toast({ variant: 'destructive', title: 'Enrichment failed', description: res?.error || 'Unknown error' });
+      } else {
+        toast({ title: 'Queued for enrichment', description: 'Bright Data will populate work history, education, bio shortly.' });
+      }
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Enrichment failed', description: err?.message || 'Network error' });
+    } finally {
+      setEnrichingIds((prev) => { const n = new Set(prev); n.delete(contact.id); return n; });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+    }
   };
 
   return (
@@ -478,7 +516,7 @@ const ContactGrid = () => {
         )}
 
         {/* Grid Header */}
-        <div className="grid grid-cols-[40px_1fr_1fr_1fr_140px] gap-0 px-4 py-2 border-b border-border bg-muted/50 text-xs font-medium text-muted-foreground">
+        <div className="grid grid-cols-[40px_1fr_1fr_1fr_140px_110px] gap-0 px-4 py-2 border-b border-border bg-muted/50 text-xs font-medium text-muted-foreground">
           <div className="flex items-center justify-center">
             <Checkbox
               checked={selectedIds.size === filteredAndSorted.length && filteredAndSorted.length > 0}
@@ -495,6 +533,7 @@ const ContactGrid = () => {
             Title <SortIcon col="title" />
           </button>
           <div className="px-2">Tags</div>
+          <div className="px-2 text-right">Enrich</div>
         </div>
 
         {/* Rows */}
@@ -509,7 +548,7 @@ const ContactGrid = () => {
                 key={contact.id}
                 onClick={() => setSelectedContact(contact)}
                 className={cn(
-                  'grid grid-cols-[40px_1fr_1fr_1fr_140px] gap-0 px-4 py-2.5 border-b border-border hover:bg-muted/50 transition-colors cursor-pointer text-sm',
+                  'grid grid-cols-[40px_1fr_1fr_1fr_140px_110px] gap-0 px-4 py-2.5 border-b border-border hover:bg-muted/50 transition-colors cursor-pointer text-sm',
                   isDetailOpen && 'bg-accent',
                   isSelected && 'bg-primary/5'
                 )}
@@ -543,6 +582,36 @@ const ContactGrid = () => {
                   {contact.tags.length > 2 && (
                     <span className="text-[10px] text-muted-foreground">+{contact.tags.length - 2}</span>
                   )}
+                </div>
+                <div className="flex items-center justify-end px-2" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                  {(() => {
+                    const status = contact.enrichment_status;
+                    const inFlight = status === 'queued' || status === 'enriching' || enrichingIds.has(contact.id);
+                    const enriched = status === 'enriched';
+                    const disabled = !contact.linkedinUrl || inFlight || enriched;
+                    return (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={disabled}
+                        onClick={(e: React.MouseEvent) => enrichOne(contact, e)}
+                        className="gap-1 h-7 text-xs"
+                        title={
+                          !contact.linkedinUrl ? 'No LinkedIn URL'
+                          : enriched ? 'Already enriched'
+                          : inFlight ? 'In progress…'
+                          : 'Enrich via Bright Data'
+                        }
+                      >
+                        {inFlight ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Sparkles className={cn("w-3 h-3", enriched && "text-emerald-600")} />
+                        )}
+                        {enriched ? 'Enriched' : inFlight ? (status === 'enriching' ? 'Enriching' : 'Queued') : 'Enrich'}
+                      </Button>
+                    );
+                  })()}
                 </div>
               </div>
             );

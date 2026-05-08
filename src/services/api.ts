@@ -181,6 +181,10 @@ class ContactsService {
     async generateAiSummary(id: string) {
         return fetchWithAuth(`${API_BASE}/ai/summary/${id}`, { method: 'POST' });
     }
+
+    async enrichContact(id: string) {
+        return fetchWithAuth(`${API_BASE}/contacts/${id}/enrich`, { method: 'POST' });
+    }
 }
 
 export const contactsService = new ContactsService();
