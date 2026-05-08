@@ -30,16 +30,22 @@ export function ChannelToggleRow({ active, counts = {}, onToggle, className }: C
     <div className={cn('flex flex-wrap gap-2', className)}>
       {CHANNELS.map((c) => {
         const on = active.includes(c.id);
+        const onStyle = on
+          ? {
+              backgroundColor: `hsl(var(--ch-${c.id}-soft))`,
+              color: `hsl(var(--ch-${c.id}))`,
+              borderColor: `hsl(var(--ch-${c.id}))`,
+            }
+          : undefined;
         return (
           <button
             key={c.id}
             type="button"
             onClick={() => onToggle?.(c.id)}
+            style={onStyle}
             className={cn(
               'inline-flex items-center gap-2 h-8 px-3 rounded text-[13px] font-medium border transition-colors',
-              on
-                ? `bg-[hsl(var(--ch-${c.id}-soft))] text-[hsl(var(--ch-${c.id}))] border-[hsl(var(--ch-${c.id}))]`
-                : 'bg-background text-muted-foreground border-border hover:bg-muted',
+              on ? '' : 'bg-background text-muted-foreground border-border hover:bg-muted',
             )}
           >
             <span
