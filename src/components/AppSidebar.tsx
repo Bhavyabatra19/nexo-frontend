@@ -127,30 +127,31 @@ const AppSidebar = () => {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto overflow-x-hidden">
-        {/* AI Credits Widget (Pure High Contrast Version) */}
+        {/* AI Credits Widget — light theme, matches the brief's surface palette */}
         {!isCollapsed && (
-          <div className="mb-4 px-3 py-3 bg-white/5 rounded-lg border border-white/10 shadow-sm mx-1">
+          <div className="mb-4 px-3 py-3 bg-card rounded-lg border border-border mx-1">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-slate-100" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-100">Daily AI Credits</span>
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Daily AI Credits</span>
               </div>
-              <span className="text-[10px] font-bold text-white">{Math.round(aiPercent)}%</span>
+              <span className="text-[10px] font-semibold text-foreground tabular-nums">{Math.round(aiPercent)}%</span>
             </div>
-            
-            <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden mb-2">
-              <div 
+
+            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden mb-2">
+              <div
                 className={cn(
                   "h-full rounded-full transition-all duration-500",
-                  aiPercent > 90 ? "bg-red-500" : aiPercent > 70 ? "bg-orange-500" : "bg-white"
+                  aiPercent > 90 ? "bg-destructive" : aiPercent > 70 ? "bg-warning" : "bg-primary"
                 )}
                 style={{ width: `${aiPercent}%` }}
               />
             </div>
-            
+
             <div className="flex justify-between items-center">
-              <span className="text-[11px] font-semibold text-white">
-                {aiRemaining.toLocaleString()} <span className="text-[9px] text-slate-400 uppercase font-normal ml-1">tokens left</span>
+              <span className="text-[11px] font-medium text-foreground">
+                {aiRemaining.toLocaleString()}
+                <span className="text-[9px] text-muted-foreground uppercase font-normal ml-1">tokens left</span>
               </span>
             </div>
           </div>
@@ -158,17 +159,14 @@ const AppSidebar = () => {
 
         {isCollapsed && (
           <div className="flex justify-center mb-4">
-            <div 
-              className={cn(
-                "w-2 h-10 rounded-full bg-black/40 dark:bg-white/5 relative overflow-hidden border border-white/10 shadow-inner",
-                aiPercent > 90 ? "border-red-500/30" : ""
-              )}
+            <div
+              className="w-2 h-10 rounded-full bg-muted relative overflow-hidden border border-border"
               title={`AI Usage: ${Math.round(aiPercent)}% (${aiRemaining.toLocaleString()} tokens left)`}
             >
-              <div 
+              <div
                 className={cn(
                   "absolute bottom-0 left-0 w-full transition-all duration-700 ease-in-out",
-                  aiPercent > 90 ? "bg-red-500" : aiPercent > 70 ? "bg-orange-500" : "bg-white"
+                  aiPercent > 90 ? "bg-destructive" : aiPercent > 70 ? "bg-warning" : "bg-primary"
                 )}
                 style={{ height: `${aiPercent}%` }}
               />

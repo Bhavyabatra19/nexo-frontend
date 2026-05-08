@@ -1,61 +1,81 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Nexo Platform tokens ──────────────────────────────────────────────────
+   Source of truth: `nexo-design-document.md` brief + Claude Design bundle
+   (`project/styles/tokens.css`). Hex values converted to HSL so shadcn/ui
+   components (which read these variables) repaint automatically.        */
+
 @layer base {
   :root {
-    --background: 0 0% 99%;
-    --foreground: 224 25% 14%;
+    /* Surfaces */
+    --background: 0 0% 100%;            /* #FFFFFF */
+    --foreground: 218 49% 20%;          /* #1A2B4C — text-primary */
 
     --card: 0 0% 100%;
-    --card-foreground: 224 25% 14%;
-
+    --card-foreground: 218 49% 20%;
     --popover: 0 0% 100%;
-    --popover-foreground: 224 25% 14%;
+    --popover-foreground: 218 49% 20%;
 
-    --primary: 234 85% 60%;
+    /* Primary = brief's accent (#2E75B6) — buttons, focus rings, links */
+    --primary: 207 60% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 20% 96%;
-    --secondary-foreground: 224 25% 14%;
+    /* Secondary / muted = surface gray (#F7F8FA) */
+    --secondary: 220 20% 97%;
+    --secondary-foreground: 218 49% 20%;
+    --muted: 220 20% 97%;
+    --muted-foreground: 220 9% 46%;     /* #6B7280 — text-secondary */
 
-    --muted: 220 15% 95%;
-    --muted-foreground: 220 10% 46%;
-
-    --accent: 234 85% 96%;
-    --accent-foreground: 234 85% 45%;
+    /* Accent surface = accent-soft (#E8F0F8) for hover/selected states */
+    --accent: 212 50% 94%;
+    --accent-foreground: 207 60% 45%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 91%;
-    --input: 220 15% 91%;
-    --ring: 234 85% 60%;
+    --border: 220 13% 91%;              /* #E5E7EB */
+    --input: 220 13% 91%;
+    --ring: 207 60% 45%;
 
-    --radius: 0.5rem;
+    --radius: 0.5rem;                   /* shadcn baseline; brief uses 8/12/16 */
 
-    --sidebar-bg: 228 30% 11%;
-    --sidebar-fg: 220 15% 75%;
-    --sidebar-fg-active: 0 0% 100%;
-    --sidebar-accent: 228 25% 18%;
-    --sidebar-border: 228 20% 18%;
-
-    --success: 152 60% 45%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-
-    --sidebar-background: 228 30% 11%;
-    --sidebar-foreground: 220 15% 75%;
-    --sidebar-primary: 234 85% 60%;
+    /* Light sidebar — brief calls for #F7F8FA bg with navy text, white pill
+       for the active item, and a subtle border between sidebar and main. */
+    --sidebar-background: 220 20% 97%;
+    --sidebar-foreground: 220 9% 46%;
+    --sidebar-primary: 207 60% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 228 25% 18%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 228 20% 18%;
-    --sidebar-ring: 234 85% 60%;
+    --sidebar-accent: 0 0% 100%;
+    --sidebar-accent-foreground: 218 49% 20%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 207 60% 45%;
+
+    /* Legacy aliases (still referenced by existing components) */
+    --sidebar-bg: 220 20% 97%;
+    --sidebar-fg: 220 9% 46%;
+    --sidebar-fg-active: 218 49% 20%;
+
+    --success: 131 47% 33%;             /* #2D7A3E */
+    --success-foreground: 0 0% 100%;
+    --success-soft: 135 24% 92%;        /* #E5F0E8 */
+    --warning: 31 100% 35%;              /* #B35C00 */
+    --warning-foreground: 0 0% 100%;
+    --warning-soft: 36 65% 92%;         /* #F7EEE0 */
+
+    /* Channel palette — used by Search results, profile breadcrumbs,
+       community cards. Values match brief verbatim. */
+    --ch-own: 218 49% 20%;              /* #1A2B4C  navy   */
+    --ch-own-soft: 220 18% 94%;         /* #EDEFF4         */
+    --ch-community: 207 60% 45%;        /* #2E75B6  blue   */
+    --ch-community-soft: 212 50% 94%;   /* #E8F0F8         */
+    --ch-public: 220 9% 46%;            /* #6B7280  gray   */
+    --ch-public-soft: 220 8% 95%;       /* #F0F1F3         */
+    --ch-friends: 262 83% 58%;          /* #7C3AED  purple */
+    --ch-friends-soft: 263 73% 95%;     /* #F1EBFB         */
   }
 
   .dark {
@@ -65,27 +85,30 @@
     --card-foreground: 220 15% 90%;
     --popover: 228 25% 12%;
     --popover-foreground: 220 15% 90%;
-    --primary: 234 85% 60%;
+    --primary: 207 60% 55%;
     --primary-foreground: 0 0% 100%;
     --secondary: 228 20% 16%;
     --secondary-foreground: 220 15% 90%;
     --muted: 228 20% 16%;
     --muted-foreground: 220 10% 55%;
-    --accent: 234 40% 20%;
-    --accent-foreground: 234 85% 75%;
+    --accent: 212 40% 22%;
+    --accent-foreground: 207 60% 75%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 100%;
     --border: 228 15% 20%;
     --input: 228 15% 20%;
-    --ring: 234 85% 60%;
+    --ring: 207 60% 55%;
     --sidebar-background: 228 30% 6%;
     --sidebar-foreground: 220 15% 65%;
-    --sidebar-primary: 234 85% 60%;
+    --sidebar-primary: 207 60% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 228 25% 12%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 228 15% 12%;
-    --sidebar-ring: 234 85% 60%;
+    --sidebar-ring: 207 60% 55%;
+    --sidebar-bg: 228 30% 6%;
+    --sidebar-fg: 220 15% 65%;
+    --sidebar-fg-active: 0 0% 100%;
   }
 }
 
@@ -98,6 +121,25 @@
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
   }
+}
+
+/* ─── Channel + warmth utilities (Nexo Platform brief) ─────────────────── */
+@layer components {
+  /* Channel pill — uppercase abbreviation, 24h × 4r, soft bg + colored text */
+  .channel-pill {
+    @apply inline-flex items-center gap-1.5 h-6 px-2 rounded text-[12px] font-medium leading-none whitespace-nowrap tracking-wide;
+  }
+  .channel-pill-own       { background: hsl(var(--ch-own-soft));       color: hsl(var(--ch-own));       }
+  .channel-pill-community { background: hsl(var(--ch-community-soft)); color: hsl(var(--ch-community)); }
+  .channel-pill-public    { background: hsl(var(--ch-public-soft));    color: hsl(var(--ch-public));    }
+  .channel-pill-friends   { background: hsl(var(--ch-friends-soft));   color: hsl(var(--ch-friends));   }
+
+  /* Warmth bar — 3 segments, never a number per brief */
+  .warmth-track { @apply inline-flex items-center gap-[3px]; }
+  .warmth-seg   { @apply block h-[6px] w-6 rounded-[2px]; background: hsl(var(--border)); }
+  .warmth-seg-cool { background: #93B5D6; }
+  .warmth-seg-warm { background: #2E75B6; }
+  .warmth-seg-hot  { background: #1A4F84; }
 }
 
 @layer utilities {
@@ -146,11 +188,11 @@
   background: hsl(var(--muted-foreground) / 0.4);
 }
 
-/* Sidebar-specific scrollbar (darker bg needs lighter thumb) */
+/* Sidebar-specific scrollbar (lighter bg now needs the standard thumb) */
 aside ::-webkit-scrollbar-thumb {
-  background: hsl(var(--sidebar-accent));
+  background: hsl(var(--border));
 }
 
 aside ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--sidebar-fg) / 0.3);
+  background: hsl(var(--muted-foreground) / 0.4);
 }
