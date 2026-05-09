@@ -1,4 +1,4 @@
-import { X, Mail, Phone, Building2, Briefcase, Calendar, MessageSquare, Tag, Send, Bell, Edit2, Trash2, CheckCircle, Circle, Clock, Plus, UserPlus, RefreshCw, Loader2, Gift, Heart, Cake, Repeat, MapPin, FileText, Sparkles, ChevronDown, GraduationCap, Users, Newspaper, ExternalLink, ThumbsUp } from 'lucide-react';
+import { X, Mail, Phone, Building2, Briefcase, Calendar, MessageSquare, Tag, Send, Bell, Edit2, Trash2, CheckCircle, Circle, Clock, Plus, UserPlus, RefreshCw, Loader2, Gift, Heart, Cake, Repeat, MapPin, FileText, Sparkles, ChevronDown, GraduationCap, Users, Newspaper, ExternalLink, ThumbsUp, Award, Languages, Trophy, Quote, Link2, Activity, Star } from 'lucide-react';
 import { format, formatDistanceToNow, isPast, isToday } from 'date-fns';
 import { type Contact, type ActivityEvent, type ActivityType, tagColors, allTags } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
@@ -561,9 +561,21 @@ const ContactDetail = ({ contact, onClose, onUpdate, onDelete, listId }: Contact
               </div>
             ) : (
               <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-semibold text-foreground truncate">{contact.name}</h2>
+                <h2 className="text-lg font-semibold text-foreground truncate flex items-center gap-1.5">
+                  <span className="truncate">{contact.name}</span>
+                  {contact.is_influencer && (
+                    <span title="LinkedIn Top Voice / Influencer" className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                      <Star className="w-2.5 h-2.5 fill-current" />Influencer
+                    </span>
+                  )}
+                </h2>
                 <p className="text-xs text-muted-foreground truncate">
-                  {contact.title}{contact.title && contact.company ? ' at ' : ''}{contact.company}
+                  {contact.title}{contact.title && contact.company ? ' at ' : ''}
+                  {contact.company && contact.current_company_url ? (
+                    <a href={contact.current_company_url} target="_blank" rel="noreferrer" className="hover:text-primary hover:underline">
+                      {contact.company}
+                    </a>
+                  ) : contact.company}
                 </p>
               </div>
             )}
@@ -1251,6 +1263,149 @@ const ContactDetail = ({ contact, onClose, onUpdate, onDelete, listId }: Contact
                       View on LinkedIn <ExternalLink className="w-3 h-3" />
                     </a>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Certifications */}
+            {contact.certifications && contact.certifications.length > 0 && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Award className="w-3 h-3" /> Certifications
+                </h3>
+                <div className="space-y-3">
+                  {contact.certifications.map((c, idx) => (
+                    <div key={idx} className="flex gap-3 text-xs">
+                      <div className="w-1 shrink-0 rounded-full bg-border mt-1" />
+                      <div className="flex-1 min-w-0 space-y-0.5">
+                        <div className="font-semibold text-foreground">
+                          {c.credential_url ? (
+                            <a href={c.credential_url} target="_blank" rel="noreferrer" className="hover:text-primary inline-flex items-center gap-1">
+                              {c.title}<ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          ) : (c.title || 'Certification')}
+                        </div>
+                        {c.issuer && <div className="text-foreground/80">{c.issuer}</div>}
+                        {c.issued && <div className="text-[10px] text-muted-foreground/80">{c.issued}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Honors & Awards */}
+            {contact.honors_and_awards && contact.honors_and_awards.length > 0 && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Trophy className="w-3 h-3" /> Honors & Awards
+                </h3>
+                <div className="space-y-3">
+                  {contact.honors_and_awards.map((h, idx) => (
+                    <div key={idx} className="flex gap-3 text-xs">
+                      <div className="w-1 shrink-0 rounded-full bg-border mt-1" />
+                      <div className="flex-1 min-w-0 space-y-0.5">
+                        <div className="font-semibold text-foreground">{h.title || 'Award'}</div>
+                        {h.issuer && <div className="text-foreground/80">{h.issuer}</div>}
+                        {h.issued && <div className="text-[10px] text-muted-foreground/80">{h.issued}</div>}
+                        {h.description && (
+                          <p className="text-[11px] text-muted-foreground/90 leading-relaxed mt-1 whitespace-pre-wrap line-clamp-3">
+                            {h.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Languages */}
+            {contact.languages && contact.languages.length > 0 && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Languages className="w-3 h-3" /> Languages
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {contact.languages.map((l, idx) => (
+                    <span key={idx} className="px-2 py-1 rounded-md text-[11px] font-medium bg-secondary text-secondary-foreground inline-flex items-center gap-1.5">
+                      <span className="font-semibold">{l.title}</span>
+                      {l.proficiency && (
+                        <span className="text-muted-foreground/80 text-[10px]">· {l.proficiency}</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recommendations */}
+            {contact.recommendations && contact.recommendations.length > 0 && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Quote className="w-3 h-3" /> Recommendations
+                  {contact.recommendations_count != null && contact.recommendations_count > contact.recommendations.length && (
+                    <span className="ml-auto font-normal text-muted-foreground/70 normal-case tracking-normal">
+                      {contact.recommendations.length} of {contact.recommendations_count}
+                    </span>
+                  )}
+                </h3>
+                <div className="space-y-3">
+                  {contact.recommendations.map((r, idx) => (
+                    <div key={idx} className="text-xs space-y-1 border-l-2 border-border pl-3">
+                      <p className="text-foreground/90 leading-relaxed line-clamp-4 whitespace-pre-wrap">{r.text}</p>
+                      {r.author && (
+                        <div className="text-[10px] text-muted-foreground/80">— {r.author}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Bio links (external links from profile) */}
+            {contact.bio_links && contact.bio_links.length > 0 && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Link2 className="w-3 h-3" /> Links
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {contact.bio_links.map((l, idx) => (
+                    <a
+                      key={idx}
+                      href={l.url || '#'}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-2 py-1 rounded-md text-[11px] font-medium bg-secondary hover:bg-secondary/80 text-secondary-foreground inline-flex items-center gap-1.5"
+                    >
+                      {l.title || l.url}<ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent activity feed */}
+            {contact.recent_activity && contact.recent_activity.length > 0 && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Activity className="w-3 h-3" /> Recent activity
+                </h3>
+                <div className="space-y-3">
+                  {contact.recent_activity.slice(0, 5).map((a, idx) => (
+                    <a
+                      key={idx}
+                      href={a.link || '#'}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block text-xs space-y-0.5 hover:bg-secondary/40 -mx-2 px-2 py-1 rounded-md"
+                    >
+                      {a.interaction && (
+                        <div className="text-[10px] text-muted-foreground/80 uppercase tracking-wider">{a.interaction}</div>
+                      )}
+                      <div className="text-foreground/90 leading-snug line-clamp-2">{a.title}</div>
+                    </a>
+                  ))}
                 </div>
               </div>
             )}

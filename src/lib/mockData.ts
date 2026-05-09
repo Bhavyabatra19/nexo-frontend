@@ -41,6 +41,9 @@ export interface Contact {
     start?: string | null;
     end?: string | null;
     dates?: string | null;
+    url?: string | null;
+    logo?: string | null;
+    description?: string | null;
   }[];
   skills?: string[];
   last_post?: { text?: string; url?: string; posted_at?: string; likes?: number; comments?: number } | null;
@@ -48,6 +51,32 @@ export interface Contact {
   connections_count?: number | null;
   followers_count?: number | null;
   location?: string | null;
+  languages?: { title?: string | null; proficiency?: string | null }[];
+  certifications?: {
+    title?: string | null;
+    issuer?: string | null;
+    issued?: string | null;
+    credential_url?: string | null;
+    credential_id?: string | null;
+  }[];
+  honors_and_awards?: {
+    title?: string | null;
+    issuer?: string | null;
+    issued?: string | null;
+    description?: string | null;
+  }[];
+  recommendations?: { text?: string | null; author?: string | null }[];
+  recommendations_count?: number | null;
+  bio_links?: { title?: string | null; url?: string | null }[];
+  recent_activity?: {
+    title?: string | null;
+    link?: string | null;
+    img?: string | null;
+    interaction?: string | null;
+  }[];
+  banner_image_url?: string | null;
+  is_influencer?: boolean | null;
+  current_company_url?: string | null;
   enrichment_status?: 'pending' | 'queued' | 'enriching' | 'enriched' | 'failed' | null;
   enriched_at?: string | null;
 }
