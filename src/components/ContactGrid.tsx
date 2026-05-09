@@ -122,6 +122,9 @@ const ContactGrid = () => {
         projects: Array.isArray(c.projects) ? c.projects : [],
         publications: Array.isArray(c.publications) ? c.publications : [],
         patents: Array.isArray(c.patents) ? c.patents : [],
+        is_self_verified: c.is_self_verified === true,
+        section_verification: c.section_verification || null,
+        claimed_by_user_id: c.claimed_by_user_id || null,
       })) as Contact[];
       return { contacts: mapped, total: response.pagination?.total ?? mapped.length };
     },

@@ -1,4 +1,4 @@
-import { X, Mail, Phone, Building2, Briefcase, Calendar, MessageSquare, Tag, Send, Bell, Edit2, Trash2, CheckCircle, Circle, Clock, Plus, UserPlus, RefreshCw, Loader2, Gift, Heart, Cake, Repeat, MapPin, FileText, Sparkles, ChevronDown, GraduationCap, Users, Newspaper, ExternalLink, ThumbsUp, Award, Languages, Trophy, Quote, Link2, Activity, Star, Users2, BookOpen, FolderGit2, BookText, Lightbulb } from 'lucide-react';
+import { X, Mail, Phone, Building2, Briefcase, Calendar, MessageSquare, Tag, Send, Bell, Edit2, Trash2, CheckCircle, Circle, Clock, Plus, UserPlus, RefreshCw, Loader2, Gift, Heart, Cake, Repeat, MapPin, FileText, Sparkles, ChevronDown, GraduationCap, Users, Newspaper, ExternalLink, ThumbsUp, Award, Languages, Trophy, Quote, Link2, Activity, Star, Users2, BookOpen, FolderGit2, BookText, Lightbulb, AlertCircle } from 'lucide-react';
 import { format, formatDistanceToNow, isPast, isToday } from 'date-fns';
 import { type Contact, type ActivityEvent, type ActivityType, tagColors, allTags } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
@@ -1116,6 +1116,20 @@ const ContactDetail = ({ contact, onClose, onUpdate, onDelete, listId }: Contact
                 </>
               )}
             </div>
+
+            {/* Public-footprint nudge — shown when the contact hasn't been
+                 self-verified by its owner. */}
+            {!contact.is_self_verified && contact.linkedinUrl && (
+              <div className="glass-card p-3 rounded-xl flex items-start gap-2.5 text-xs border-amber-500/20 bg-amber-500/5">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-foreground">Public footprint</div>
+                  <p className="text-muted-foreground/90 leading-relaxed mt-0.5">
+                    This data is auto-discovered from public LinkedIn — some details may be out of date or incorrect.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Network metrics strip */}
             {(contact.connections_count != null || contact.followers_count != null || contact.location) && (

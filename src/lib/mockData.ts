@@ -108,6 +108,9 @@ export interface Contact {
   }[];
   enrichment_status?: 'pending' | 'queued' | 'enriching' | 'enriched' | 'failed' | null;
   enriched_at?: string | null;
+  is_self_verified?: boolean | null;
+  section_verification?: Record<string, 'verified' | 'incorrect' | null> | null;
+  claimed_by_user_id?: string | null;
 }
 
 export interface NoteEntry {

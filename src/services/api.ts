@@ -189,6 +189,32 @@ class ContactsService {
 
 export const contactsService = new ContactsService();
 
+// ─── Profile (claim + section verification) ────────────────────────────────
+class ProfileService {
+    async getMe() {
+        return fetchWithAuth(`${API_BASE}/profile/me`);
+    }
+    async claim(linkedinUrl: string) {
+        return fetchWithAuth(`${API_BASE}/profile/claim`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ linkedinUrl }),
+        });
+    }
+    async verifySection(
+        section: string,
+        status: 'verified' | 'incorrect' | null,
+        overrides?: Record<string, any>,
+    ) {
+        return fetchWithAuth(`${API_BASE}/profile/sections/${section}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status, overrides }),
+        });
+    }
+}
+export const profileService = new ProfileService();
+
 // ─── Organize Service ──────────────────────────────────────────────────────
 
 class OrganizeService {
@@ -802,6 +828,7 @@ export interface ScanResult {
         confidence_score?: number | null;
         connection_tier?: string | null;
     } | null;
+    is_self_verified?: boolean | null;
 }
 
 export interface ScanRecord {

@@ -18,6 +18,7 @@ const navItems = [
   { id: 'reminders', label: 'Reminders', icon: Bell, href: '/dashboard/reminders' },
   { id: 'dedup', label: 'Merge & Fix', icon: GitMerge, href: '/dashboard/dedup' },
   { id: 'linkedin', label: 'LinkedIn Setup', icon: Linkedin, href: '/onboarding' },
+  { id: 'my-profile', label: 'My Profile', icon: ShieldCheck, href: '/dashboard/my-profile' },
   { id: 'import', label: 'Import', icon: Upload, href: '/dashboard/import' },
   { id: 'settings', label: 'Settings', icon: Settings, href: '/dashboard/settings' },
 ];

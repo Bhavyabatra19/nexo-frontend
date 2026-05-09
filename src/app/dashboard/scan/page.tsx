@@ -118,6 +118,14 @@ function ResultCard({ r }: { r: ScanResult }) {
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold text-sm truncate">{r.full_name}</span>
           <DegreeBadge degree={r.degree} />
+          {!r.is_self_verified && (
+            <span
+              title="Public LinkedIn footprint — info may be out of date or incorrect."
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200 inline-flex items-center gap-1"
+            >
+              <AlertCircle className="w-2.5 h-2.5" /> Public
+            </span>
+          )}
           {typeof r.score === "number" && (
             <span className="text-[10px] text-muted-foreground">match {r.score.toFixed(2)}</span>
           )}
