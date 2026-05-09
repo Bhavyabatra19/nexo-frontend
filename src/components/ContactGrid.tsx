@@ -117,6 +117,11 @@ const ContactGrid = () => {
         banner_image_url: c.banner_image_url || null,
         is_influencer: c.is_influencer ?? null,
         current_company_url: c.current_company_url || null,
+        organizations: Array.isArray(c.organizations) ? c.organizations : [],
+        courses: Array.isArray(c.courses) ? c.courses : [],
+        projects: Array.isArray(c.projects) ? c.projects : [],
+        publications: Array.isArray(c.publications) ? c.publications : [],
+        patents: Array.isArray(c.patents) ? c.patents : [],
       })) as Contact[];
       return { contacts: mapped, total: response.pagination?.total ?? mapped.length };
     },

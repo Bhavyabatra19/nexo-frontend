@@ -1,4 +1,4 @@
-import { X, Mail, Phone, Building2, Briefcase, Calendar, MessageSquare, Tag, Send, Bell, Edit2, Trash2, CheckCircle, Circle, Clock, Plus, UserPlus, RefreshCw, Loader2, Gift, Heart, Cake, Repeat, MapPin, FileText, Sparkles, ChevronDown, GraduationCap, Users, Newspaper, ExternalLink, ThumbsUp, Award, Languages, Trophy, Quote, Link2, Activity, Star } from 'lucide-react';
+import { X, Mail, Phone, Building2, Briefcase, Calendar, MessageSquare, Tag, Send, Bell, Edit2, Trash2, CheckCircle, Circle, Clock, Plus, UserPlus, RefreshCw, Loader2, Gift, Heart, Cake, Repeat, MapPin, FileText, Sparkles, ChevronDown, GraduationCap, Users, Newspaper, ExternalLink, ThumbsUp, Award, Languages, Trophy, Quote, Link2, Activity, Star, Users2, BookOpen, FolderGit2, BookText, Lightbulb } from 'lucide-react';
 import { format, formatDistanceToNow, isPast, isToday } from 'date-fns';
 import { type Contact, type ActivityEvent, type ActivityType, tagColors, allTags } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
@@ -1380,6 +1380,147 @@ const ContactDetail = ({ contact, onClose, onUpdate, onDelete, listId }: Contact
                     >
                       {l.title || l.url}<ExternalLink className="w-2.5 h-2.5" />
                     </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Organizations */}
+            {contact.organizations && contact.organizations.length > 0 && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Users2 className="w-3 h-3" /> Organizations
+                </h3>
+                <div className="space-y-3">
+                  {contact.organizations.map((o, idx) => {
+                    const dates = formatDateRange(o.start, o.end, false);
+                    return (
+                      <div key={idx} className="flex gap-3 text-xs">
+                        <div className="w-1 shrink-0 rounded-full bg-border mt-1" />
+                        <div className="flex-1 min-w-0 space-y-0.5">
+                          <div className="font-semibold text-foreground">{o.title}</div>
+                          {o.role && <div className="text-foreground/80">{o.role}</div>}
+                          {dates && <div className="text-[10px] text-muted-foreground/80">{dates}</div>}
+                          {o.description && (
+                            <p className="text-[11px] text-muted-foreground/90 leading-relaxed mt-1 whitespace-pre-wrap line-clamp-3">
+                              {o.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Projects */}
+            {contact.projects && contact.projects.length > 0 && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <FolderGit2 className="w-3 h-3" /> Projects
+                </h3>
+                <div className="space-y-3">
+                  {contact.projects.map((p, idx) => {
+                    const dates = formatDateRange(p.start, p.end, false);
+                    return (
+                      <div key={idx} className="flex gap-3 text-xs">
+                        <div className="w-1 shrink-0 rounded-full bg-border mt-1" />
+                        <div className="flex-1 min-w-0 space-y-0.5">
+                          <div className="font-semibold text-foreground">
+                            {p.url ? (
+                              <a href={p.url} target="_blank" rel="noreferrer" className="hover:text-primary inline-flex items-center gap-1">
+                                {p.title}<ExternalLink className="w-2.5 h-2.5" />
+                              </a>
+                            ) : p.title}
+                          </div>
+                          {dates && <div className="text-[10px] text-muted-foreground/80">{dates}</div>}
+                          {p.description && (
+                            <p className="text-[11px] text-muted-foreground/90 leading-relaxed mt-1 whitespace-pre-wrap line-clamp-3">
+                              {p.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Publications */}
+            {contact.publications && contact.publications.length > 0 && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <BookText className="w-3 h-3" /> Publications
+                </h3>
+                <div className="space-y-3">
+                  {contact.publications.map((p, idx) => (
+                    <div key={idx} className="flex gap-3 text-xs">
+                      <div className="w-1 shrink-0 rounded-full bg-border mt-1" />
+                      <div className="flex-1 min-w-0 space-y-0.5">
+                        <div className="font-semibold text-foreground">
+                          {p.url ? (
+                            <a href={p.url} target="_blank" rel="noreferrer" className="hover:text-primary inline-flex items-center gap-1">
+                              {p.title}<ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          ) : p.title}
+                        </div>
+                        {p.publisher && <div className="text-foreground/80">{p.publisher}</div>}
+                        {p.date && <div className="text-[10px] text-muted-foreground/80">{p.date}</div>}
+                        {p.description && (
+                          <p className="text-[11px] text-muted-foreground/90 leading-relaxed mt-1 whitespace-pre-wrap line-clamp-3">
+                            {p.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Courses */}
+            {contact.courses && contact.courses.length > 0 && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <BookOpen className="w-3 h-3" /> Courses
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {contact.courses.map((c, idx) => (
+                    <span key={idx} className="px-2 py-1 rounded-md text-[11px] font-medium bg-secondary text-secondary-foreground inline-flex items-center gap-1.5">
+                      <span className="font-semibold">{c.title}</span>
+                      {c.provider && (
+                        <span className="text-muted-foreground/80 text-[10px]">· {c.provider}</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Patents */}
+            {contact.patents && contact.patents.length > 0 && (
+              <div className="space-y-3 glass-card p-4 rounded-xl">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Lightbulb className="w-3 h-3" /> Patents
+                </h3>
+                <div className="space-y-3">
+                  {contact.patents.map((p, idx) => (
+                    <div key={idx} className="flex gap-3 text-xs">
+                      <div className="w-1 shrink-0 rounded-full bg-border mt-1" />
+                      <div className="flex-1 min-w-0 space-y-0.5">
+                        <div className="font-semibold text-foreground">
+                          {p.url ? (
+                            <a href={p.url} target="_blank" rel="noreferrer" className="hover:text-primary inline-flex items-center gap-1">
+                              {p.title}<ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          ) : p.title}
+                        </div>
+                        {p.patent_id && <div className="text-[10px] text-muted-foreground/80">ID: {p.patent_id}</div>}
+                        {p.issued && <div className="text-[10px] text-muted-foreground/80">{p.issued}</div>}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>

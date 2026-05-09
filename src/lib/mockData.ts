@@ -77,6 +77,35 @@ export interface Contact {
   banner_image_url?: string | null;
   is_influencer?: boolean | null;
   current_company_url?: string | null;
+  organizations?: {
+    title?: string | null;
+    role?: string | null;
+    start?: string | null;
+    end?: string | null;
+    description?: string | null;
+    membership_number?: string | null;
+  }[];
+  courses?: { title?: string | null; provider?: string | null }[];
+  projects?: {
+    title?: string | null;
+    start?: string | null;
+    end?: string | null;
+    description?: string | null;
+    url?: string | null;
+  }[];
+  publications?: {
+    title?: string | null;
+    publisher?: string | null;
+    date?: string | null;
+    description?: string | null;
+    url?: string | null;
+  }[];
+  patents?: {
+    title?: string | null;
+    issued?: string | null;
+    patent_id?: string | null;
+    url?: string | null;
+  }[];
   enrichment_status?: 'pending' | 'queued' | 'enriching' | 'enriched' | 'failed' | null;
   enriched_at?: string | null;
 }
