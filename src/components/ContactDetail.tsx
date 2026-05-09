@@ -1210,9 +1210,18 @@ const ContactDetail = ({ contact, onClose, onUpdate, onDelete, listId }: Contact
                       <div key={idx} className="flex gap-3 text-xs">
                         <div className="w-1 shrink-0 rounded-full bg-border mt-1" />
                         <div className="flex-1 min-w-0 space-y-0.5">
-                          <div className="font-semibold text-foreground">{edu.school || 'School'}</div>
+                          {edu.school ? (
+                            <div className="font-semibold text-foreground">{edu.school}</div>
+                          ) : (
+                            <div className="font-medium text-muted-foreground/70 italic">School not available</div>
+                          )}
                           {detail && <div className="text-foreground/80">{detail}</div>}
                           {dates && <div className="text-[10px] text-muted-foreground/80">{dates}</div>}
+                          {edu.description && (
+                            <p className="text-[11px] text-muted-foreground/90 leading-relaxed mt-1 whitespace-pre-wrap line-clamp-3">
+                              {edu.description}
+                            </p>
+                          )}
                         </div>
                       </div>
                     );
