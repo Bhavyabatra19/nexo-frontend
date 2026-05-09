@@ -107,6 +107,16 @@ const ContactGrid = () => {
         connections_count: c.connections_count ?? null,
         followers_count: c.followers_count ?? null,
         location: c.location || c.city || c.country || null,
+        languages: Array.isArray(c.languages) ? c.languages : [],
+        certifications: Array.isArray(c.certifications) ? c.certifications : [],
+        honors_and_awards: Array.isArray(c.honors_and_awards) ? c.honors_and_awards : [],
+        recommendations: Array.isArray(c.recommendations) ? c.recommendations : [],
+        recommendations_count: c.recommendations_count ?? null,
+        bio_links: Array.isArray(c.bio_links) ? c.bio_links : [],
+        recent_activity: Array.isArray(c.recent_activity) ? c.recent_activity : [],
+        banner_image_url: c.banner_image_url || null,
+        is_influencer: c.is_influencer ?? null,
+        current_company_url: c.current_company_url || null,
       })) as Contact[];
       return { contacts: mapped, total: response.pagination?.total ?? mapped.length };
     },
