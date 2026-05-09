@@ -1198,7 +1198,7 @@ const ContactDetail = ({ contact, onClose, onUpdate, onDelete, listId }: Contact
                             {role.location && <span className="flex items-center gap-1"><MapPin className="w-2.5 h-2.5" />{role.location}</span>}
                           </div>
                           {role.description && (
-                            <p className="text-[11px] text-muted-foreground/90 leading-relaxed mt-1 whitespace-pre-wrap line-clamp-4">
+                            <p className="text-[11px] text-muted-foreground/90 leading-relaxed mt-1 whitespace-pre-wrap">
                               {role.description}
                             </p>
                           )}
@@ -1232,7 +1232,7 @@ const ContactDetail = ({ contact, onClose, onUpdate, onDelete, listId }: Contact
                           {detail && <div className="text-foreground/80">{detail}</div>}
                           {dates && <div className="text-[10px] text-muted-foreground/80">{dates}</div>}
                           {edu.description && (
-                            <p className="text-[11px] text-muted-foreground/90 leading-relaxed mt-1 whitespace-pre-wrap line-clamp-3">
+                            <p className="text-[11px] text-muted-foreground/90 leading-relaxed mt-1 whitespace-pre-wrap">
                               {edu.description}
                             </p>
                           )}
